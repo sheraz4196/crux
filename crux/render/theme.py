@@ -1,0 +1,1 @@
+ROLES = {"primary": "bold cyan", "secondary": "cyan", "success": "green", "warning": "yellow", "error": "red", "muted": "dim", "directory": "bold blue", "file": "default", "git": "magenta", "prompt": "cyan"}

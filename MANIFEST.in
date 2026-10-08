@@ -1,0 +1,2 @@
+include CONTRIBUTING.md ACCEPTANCE.md
+recursive-include tests *.py

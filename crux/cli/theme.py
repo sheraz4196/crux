@@ -7,12 +7,13 @@ import typer
 from crux.cli.main import app
 from crux.cli.common import fail
 from crux.config.manager import load
-from crux.render.theme import THEMES
+from crux.render.theme import THEMES, terminal_sequences
+from crux.core.terminal import detect
 
 
 @app.command()
-def theme(name: str = typer.Argument(None)):
-    """Show the current theme, or select default, light, or monochrome."""
+def theme(ctx: typer.Context, name: str = typer.Argument(None)):
+    """Show the current theme, or select default, dark, light, or monochrome."""
     config = load()
     if name is None:
         typer.echo(f"Theme: {config.data['general']['theme']}\nAvailable: {', '.join(THEMES)}")
@@ -52,4 +53,6 @@ def theme(name: str = typer.Argument(None)):
                 os.unlink(temporary)
     except (OSError, ValueError) as exc:
         fail(exc)
+    if detect(no_color=bool((ctx.obj or {}).get('no_color'))).color:
+        typer.echo(terminal_sequences(name), nl=False)
     typer.echo(f'Theme changed to {name}.')

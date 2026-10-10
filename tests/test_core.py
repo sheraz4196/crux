@@ -148,3 +148,45 @@ def test_optional_prompt_failures(tmp_path):
     config = load()
     config.data['prompt']['enabled'] = False
     assert build(configuration=config) == '> '
+
+
+def test_prompt_themes_and_shell_width_markers(tmp_path, monkeypatch):
+    monkeypatch.setenv('TERM', 'xterm-256color')
+    monkeypatch.delenv('NO_COLOR', raising=False)
+    config = load()
+    default = build(path=tmp_path, configuration=config, shell='bash')
+    config.data['general']['theme'] = 'light'
+    light = build(path=tmp_path, configuration=config, shell='bash')
+    assert '\x1b[1;96m' in default and '\x1b[1;34m' in light
+    assert default != light
+    assert '\x01\x1b[' in light and 'm\x02' in light
+    path = tmp_path / 'percent%F{red}'
+    path.mkdir()
+    zsh = build(path=path, configuration=config, shell='zsh')
+    assert '%{\x1b[' in zsh and 'percent%%F{red}' in zsh
+    monkeypatch.setenv('NO_COLOR', '')
+    assert '\x1b' not in build(path=tmp_path, configuration=config, shell='bash')
+    monkeypatch.delenv('NO_COLOR')
+    config.data['general']['theme'] = 'monochrome'
+    assert '\x1b' not in build(path=tmp_path, configuration=config, shell='bash')
+
+
+def test_output_theme_colors(monkeypatch):
+    from crux.render.renderer import Renderer
+    class Terminal(io.StringIO):
+        encoding = 'utf-8'
+        def isatty(self): return True
+    monkeypatch.setenv('TERM', 'xterm')
+    monkeypatch.delenv('NO_COLOR', raising=False)
+    outputs = []
+    for theme in ('default', 'light', 'monochrome'):
+        terminal = Terminal()
+        with patch('sys.stdout', terminal):
+            renderer = Renderer(theme=theme)
+            renderer.line('folder/', 'directory')
+            renderer.line('file', 'file')
+        outputs.append(terminal.getvalue())
+    assert '\x1b[1;94m' in outputs[0]
+    assert '\x1b[1;35m' in outputs[1]
+    assert '\x1b[34m' in outputs[1]
+    assert len(set(outputs)) == 3

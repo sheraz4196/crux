@@ -134,7 +134,8 @@ def test_bash_command_routing(tmp_path):
     profile = tmp_path / 'profile'
     edit_profile(profile, 'bash')
     # Override the terminal predicate to exercise routing without a real terminal.
-    script = f'''export PATH="{bindir}:$PATH"
+    script = f'''export HOME="{tmp_path}"
+export PATH="{bindir}:$PATH"
 source "{profile}"
 [() {{ if test "$1" = -t; then return 0; else builtin [ "$@"; fi; }}
 git status
@@ -157,7 +158,59 @@ def test_upgrade_old_integration(tmp_path):
     path = tmp_path / 'profile'
     path.write_text('before\n# >>> crux >>>\n# old prompt only\n# <<< crux <<<\nafter\n')
     assert edit_profile(path, 'bash')
-    assert 'git()' in path.read_text()
+    assert 'function git {' in path.read_text()
     assert not edit_profile(path, 'bash')
     edit_profile(path, 'bash', remove=True)
     assert path.read_text() == 'before\nafter\n'
+
+
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX pseudo-terminal')
+def test_bash_aliases_and_real_terminal(tmp_path):
+    import pty
+    bash = shutil.which('bash')
+    if not bash:
+        pytest.skip('Bash unavailable')
+    bindir = tmp_path / 'bin'
+    bindir.mkdir()
+    for name in ('crux', 'git', 'ls', 'tree'):
+        executable = bindir / name
+        executable.write_text(f'#!/bin/sh\nprintf "{name}:%s\\n" "$*"\n')
+        executable.chmod(0o755)
+    profile = tmp_path / 'profile'
+    profile.write_text("alias ls='ls --color=auto'\nalias git='git --no-pager'\nalias tree='tree -C'\nalias personal='echo personal-ok'\n")
+    edit_profile(profile, 'bash')
+    script = f'''source "{profile}"
+source "{profile}"
+ls
+git status
+tree
+git status --porcelain
+git diff
+ls | cat
+personal
+'''
+    master, slave = pty.openpty()
+    try:
+        env = {**os.environ, 'HOME': str(tmp_path), 'PATH': str(bindir) + os.pathsep + os.environ['PATH']}
+        result = subprocess.run([bash, '--noprofile', '--norc', '-O', 'expand_aliases', '-c', script], env=env, stdout=slave, stderr=subprocess.PIPE, timeout=10)
+        os.close(slave)
+        slave = None
+        output = b''
+        while True:
+            try:
+                chunk = os.read(master, 4096)
+            except OSError:
+                break
+            if not chunk:
+                break
+            output += chunk
+    finally:
+        os.close(master)
+        if slave is not None:
+            os.close(slave)
+    assert result.returncode == 0, result.stderr
+    assert result.stderr == b''
+    assert output.decode().splitlines() == [
+        'crux:_ls', 'crux:_git status', 'crux:_tree',
+        'git:status --porcelain', 'git:diff', 'ls:', 'personal-ok',
+    ]

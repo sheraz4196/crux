@@ -16,7 +16,7 @@ Crux is not published to PyPI yet. Install from this repository or a locally bui
 | Git | Optional for installation from a downloaded ZIP; required for Git status and repository information in the prompt. |
 | Fonts | A Unicode-capable font for prompt symbols. A Nerd Font is optional, useful for file icons. |
 
-The installer downloads Crux's Python dependencies (`typer` and `rich`) automatically. Node.js, npm, and a compiler are not required for a normal installation. Install the native `tree` utility if you want Bash/Zsh `tree` commands with arguments or redirected output.
+The installer downloads Crux's Python dependencies (`typer`, `rich`, and `pygments`) automatically. Node.js, npm, and a compiler are not required for a normal installation. Install the native `tree` utility if you want Bash/Zsh `tree` commands with arguments or redirected output.
 
 ## Windows
 
@@ -57,7 +57,7 @@ crux theme cobalt
 git status
 ```
 
-Run `git status` inside a Git repository. PowerShell integration currently provides the prompt and `git status`; its `ls` and `tree` commands retain their normal behaviour. Use `git.exe status` when you need native Git output, especially in PowerShell pipelines.
+Run `git status` inside a Git repository. Use `crux view README.md` or `crux view path\to\code.py` for syntax-highlighted file viewing. PowerShell integration currently provides the prompt and `git status`; its `ls` and `tree` commands retain their normal behaviour. Use `git.exe status` when you need native Git output, especially in PowerShell pipelines.
 
 ### If PowerShell blocks the profile
 
@@ -172,7 +172,7 @@ crux config
 crux theme
 ```
 
-Available themes are `default`, `dark`, `light`, `cobalt`, and `monochrome`. In Bash/Zsh, also try `ls`, `tree`, and `git status` inside a repository. Commands with arguments/options and redirected output normally use the native programs.
+Available themes are `default`, `dark`, `light`, `cobalt`, and `monochrome`. In Bash/Zsh, also try `ls`, `tree`, `cat README.md`, and `git status` inside a repository. Commands with arguments/options and redirected output normally use the native programs.
 
 ### Theme and startup behaviour
 

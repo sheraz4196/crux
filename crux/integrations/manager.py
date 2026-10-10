@@ -56,21 +56,23 @@ fi'''
     if shell in ('bash', 'zsh'):
         body += """
 if command -v crux >/dev/null 2>&1; then
-  git() {
+  # Existing aliases would bypass functions (and can corrupt function parsing).
+  unalias git ls tree 2>/dev/null || true
+  function git {
     if [ -t 1 ] && [ "$#" -eq 1 ] && [ "$1" = status ]; then
       crux _git status
     else
       command git "$@"
     fi
   }
-  ls() {
+  function ls {
     if [ -t 1 ] && [ "$#" -eq 0 ]; then
       crux _ls
     else
       command ls "$@"
     fi
   }
-  tree() {
+  function tree {
     if [ -t 1 ] && [ "$#" -eq 0 ]; then
       crux _tree
     else

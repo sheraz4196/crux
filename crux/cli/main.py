@@ -19,4 +19,4 @@ def main():
     app()
 
 
-from crux.cli import config, doctor, ls, tree, git, init, theme  # noqa: E402,F401
+from crux.cli import config, doctor, ls, tree, git, init, theme, cat  # noqa: E402,F401

@@ -168,7 +168,26 @@ def test_prompt_themes_and_shell_width_markers(tmp_path, monkeypatch):
     assert '\x1b' not in build(path=tmp_path, configuration=config, shell='bash')
     monkeypatch.delenv('NO_COLOR')
     config.data['general']['theme'] = 'monochrome'
-    assert '\x1b' not in build(path=tmp_path, configuration=config, shell='bash')
+    monochrome = build(path=tmp_path, configuration=config, shell='bash')
+    assert '\x1b[' not in monochrome
+    assert '\x1b]11;#181818\x1b\\' in monochrome
+
+
+@pytest.mark.parametrize('shell,opening,closing', [('bash', '\x01', '\x02'), ('zsh', '%{', '%}'), ('powershell', '', '')])
+def test_terminal_theme_in_shell_prompt(tmp_path, monkeypatch, shell, opening, closing):
+    monkeypatch.setenv('TERM', 'xterm-256color')
+    monkeypatch.delenv('NO_COLOR', raising=False)
+    config = load()
+    config.data['general']['theme'] = 'light'
+    prompt = build(path=tmp_path, configuration=config, shell=shell)
+    assert prompt.startswith(opening + '\x1b]10;#24292f\x1b\\')
+    assert '\x1b]11;#f5f7fa\x1b\\' in prompt
+    assert '\x1b]12;#24292f\x1b\\' in prompt
+    assert '\x1b]4;0;#24292f;' in prompt
+    assert ';15;#343b45\x1b\\' + closing in prompt
+    assert '\x1b' not in build(path=tmp_path, configuration=config)
+    monkeypatch.setenv('TERM', 'dumb')
+    assert '\x1b' not in build(path=tmp_path, configuration=config, shell=shell)
 
 
 def test_output_theme_colors(monkeypatch):

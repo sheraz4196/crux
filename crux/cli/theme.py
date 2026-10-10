@@ -7,12 +7,14 @@ import typer
 from crux.cli.main import app
 from crux.cli.common import fail
 from crux.config.manager import load
-from crux.render.theme import THEMES
+from crux.render.theme import THEMES, terminal_sequences
+from crux.core.terminal import detect
+from crux.integrations.terminal_theme import sync_gnome_profile
 
 
 @app.command()
-def theme(name: str = typer.Argument(None)):
-    """Show the current theme, or select default, light, or monochrome."""
+def theme(ctx: typer.Context, name: str = typer.Argument(None), sync_profile: bool = typer.Option(False, '--sync-profile', help='Also save GNOME Terminal default-profile colours when output is redirected.')):
+    """Show the current theme, or select default, dark, light, cobalt, or monochrome."""
     config = load()
     if name is None:
         typer.echo(f"Theme: {config.data['general']['theme']}\nAvailable: {', '.join(THEMES)}")
@@ -52,4 +54,13 @@ def theme(name: str = typer.Argument(None)):
                 os.unlink(temporary)
     except (OSError, ValueError) as exc:
         fail(exc)
+    color = detect(no_color=bool((ctx.obj or {}).get('no_color'))).color
+    if color or sync_profile is True:
+        try:
+            if sync_gnome_profile(name, path.parent):
+                typer.echo('GNOME Terminal default-profile colours updated.')
+        except (RuntimeError, OSError) as exc:
+            typer.echo(f'Warning: {exc}', err=True)
+    if color:
+        typer.echo(terminal_sequences(name), nl=False)
     typer.echo(f'Theme changed to {name}.')

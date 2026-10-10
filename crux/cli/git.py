@@ -5,7 +5,7 @@ from crux.cli.common import context, fail
 from crux.core.git import status as git_status
 
 subapp = typer.Typer(help='Present local Git information.')
-app.add_typer(subapp, name='git')
+app.add_typer(subapp, name='_git', hidden=True)
 
 
 @subapp.command()

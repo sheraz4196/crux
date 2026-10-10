@@ -9,9 +9,7 @@ def main():
         parser.add_argument('--status', type=int, default=0)
         parser.add_argument('--shell', default='plain')
         args = parser.parse_args(sys.argv[2:])
-        value = build(args.status)
-        if args.shell == 'zsh':
-            value = value.replace('%', '%%')
+        value = build(args.status, shell=args.shell)
         sys.stdout.write(value)
         return
     from crux.cli.main import main as cli_main

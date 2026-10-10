@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
+from stat import S_ISLNK
 
 
 @dataclass(frozen=True)
@@ -16,11 +17,13 @@ def scan(path, hidden=False):
     for item in Path(path).iterdir():
         if not hidden and item.name.startswith("."):
             continue
+        symlink = False
         try:
             stat = item.lstat()
-            entries.append(FileEntry(item, item.is_dir(), item.is_symlink(), stat.st_size))
+            symlink = S_ISLNK(stat.st_mode)
+            entries.append(FileEntry(item, item.is_dir(), symlink, stat.st_size))
         except OSError as exc:
-            entries.append(FileEntry(item, False, item.is_symlink(), None, str(exc)))
+            entries.append(FileEntry(item, False, symlink, None, str(exc)))
     return sorted(entries, key=lambda e: (not e.directory, e.path.name.casefold(), e.path.name))
 
 

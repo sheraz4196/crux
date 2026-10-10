@@ -7,7 +7,11 @@ from crux.cli.main import app
 runner = CliRunner()
 
 
-def test_commands(tmp_path):
+def test_commands(tmp_path, monkeypatch):
+    # Typer forces terminal styling under GITHUB_ACTIONS, even in captured help.
+    # Exercise captured-output behavior independently of the CI host settings.
+    import typer.rich_utils
+    monkeypatch.setattr(typer.rich_utils, "FORCE_TERMINAL", None)
     for args in (['--version'], ['--help'], ['config'], ['doctor', '--json'], ['_ls', str(tmp_path)], ['_tree', str(tmp_path)], ['_git', '--help'], ['init', '--help'], ['uninstall', '--help']):
         result = runner.invoke(app, args)
         assert result.exit_code == 0, result.output

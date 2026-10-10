@@ -190,3 +190,15 @@ def test_output_theme_colors(monkeypatch):
     assert '\x1b[1;35m' in outputs[1]
     assert '\x1b[34m' in outputs[1]
     assert len(set(outputs)) == 3
+
+
+def test_scan_does_not_retry_inaccessible_metadata(tmp_path):
+    (tmp_path / 'inaccessible').touch()
+    with patch.object(Path, 'lstat', side_effect=PermissionError('denied')) as metadata:
+        with patch.object(Path, 'is_symlink', side_effect=AssertionError('must not retry metadata')):
+            entries = scan(tmp_path)
+    assert metadata.call_count == 1
+    assert len(entries) == 1
+    assert entries[0].error == 'denied'
+    assert entries[0].size is None
+    assert not entries[0].directory

@@ -84,14 +84,14 @@ def test_other_shells_when_available(tmp_path, shell):
     executable = shutil.which('zsh' if shell == 'zsh' else 'pwsh')
     if not executable:
         pytest.skip(f'{shell} unavailable on this host')
-    path = tmp_path / 'profile'
+    path = tmp_path / ('profile.ps1' if shell == 'powershell' else 'profile')
     if shell == 'zsh':
         path.write_text("alias personal='echo alias-ok'\npersonal_function() { echo function-ok; }\nexport PERSONAL=value\n")
         command = f'source "{path}"\npersonal\npersonal_function\nprint -r -- "$PERSONAL"\nprint pipe-ok | cat\n'
         args = [executable, '-f', '-c', command]
     else:
         path.write_text("function personal { 'alias-ok' }\nfunction personal_function { 'function-ok' }\n$env:PERSONAL='value'\n")
-        command = f". '{path}'; personal; personal_function; $env:PERSONAL; 'pipe-ok' | Write-Output; $global:LASTEXITCODE=17; prompt; if ($global:LASTEXITCODE -ne 17) {{ exit 1 }}"
+        command = f"$ErrorActionPreference='Stop'; . '{path}'; personal; personal_function; $env:PERSONAL; 'pipe-ok' | Write-Output; $global:LASTEXITCODE=17; prompt; if ($global:LASTEXITCODE -ne 17) {{ exit 1 }}"
         args = [executable, '-NoProfile', '-Command', command]
     edit_profile(path, shell)
     result = subprocess.run(args, capture_output=True, text=True)

@@ -57,7 +57,24 @@ fi'''
         body += """
 if command -v crux >/dev/null 2>&1; then
   # Existing aliases would bypass functions (and can corrupt function parsing).
-  unalias git ls tree 2>/dev/null || true
+  unalias git ls tree cat 2>/dev/null || true
+  function cat {
+    local _crux_file
+    if [ -t 1 ] && [ "$#" -gt 0 ]; then
+      for _crux_file in "$@"; do
+        case "$_crux_file" in
+          -*) command cat "$@"; return $? ;;
+        esac
+        if [ ! -f "$_crux_file" ]; then
+          command cat "$@"
+          return $?
+        fi
+      done
+      crux _cat -- "$@"
+    else
+      command cat "$@"
+    fi
+  }
   function git {
     if [ -t 1 ] && [ "$#" -eq 1 ] && [ "$1" = status ]; then
       crux _git status

@@ -47,6 +47,7 @@ crux doctor --json
 crux theme                    # current and available themes
 crux theme light              # default, dark, light, cobalt, monochrome
 crux theme cobalt             # Wes Bos's Cobalt2 terminal palette
+crux theme cobalt --sync-profile # save GNOME profile colours even from a script
 crux config
 crux config --json
 crux install --shell bash --dry-run
@@ -84,7 +85,7 @@ show_sizes = true
 enabled = true
 ```
 
-Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. The prompt uses a compact two-line frame with colored directory, Git, environment, and exit-status segments. Theme changes update the terminal background, default text, cursor, and sixteen ANSI colours immediately, and apply again at each shell prompt. `light` uses a pale background with dark text; `default` uses a dark background; `monochrome` uses a dark grayscale palette without coloured prompt segments. Terminal-wide colours require an emulator supporting OSC 4/10/11/12 (such as GNOME Terminal or xterm). `NO_COLOR` and `TERM=dumb` suppress colour controls; `--no-color` suppresses them for the theme command. Redirected theme-command output contains no escapes. Crux collects no telemetry.
+Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. The prompt uses a compact two-line frame with colored directory, Git, environment, and exit-status segments. Theme changes update the terminal background, default text, cursor, and sixteen ANSI colours immediately, and apply again at each shell prompt. `light` uses a pale background with dark text; `default` uses a dark background; `monochrome` uses a dark grayscale palette without coloured prompt segments. Terminal-wide colours require an emulator supporting OSC 4/10/11/12 (such as GNOME Terminal or xterm). `NO_COLOR` and `TERM=dumb` suppress colour controls; `--no-color` suppresses them for the theme command. Redirected theme-command output contains no escapes. In GNOME Terminal, interactive theme selection also saves the selected colours to the default terminal profile, so the scrollbar surround and newly opened windows use the background before the first prompt. The scrollbar handle keeps its desktop GTK styling. The original profile is backed up once beside the Crux configuration as `gnome-terminal-<profile-id>.backup.ini`. Use `--sync-profile` to request this profile update from scripts. Profile-sync failures are reported as warnings while the Crux theme is still saved. Crux collects no telemetry.
 
 ## Development
 

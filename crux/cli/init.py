@@ -44,7 +44,5 @@ def uninstall(shell: str = typer.Option(None, '--shell'), profile: Path = typer.
 def prompt(status: int = typer.Option(0, '--status'), shell: str = typer.Option('plain', '--shell')):
     """Render plain prompt context without loading Rich on the fast path."""
     from crux.prompt.builder import build
-    value = build(status)
-    if shell == 'zsh':
-        value = value.replace('%', '%%')
+    value = build(status, shell=shell)
     typer.echo(value, nl=False)

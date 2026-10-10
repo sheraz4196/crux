@@ -54,6 +54,7 @@ def test_management_commands_and_theme(tmp_path, monkeypatch):
     path.write_text('# keep me\n[general]\nicons = false\n[prompt]\nshow_git = false\n')
     result = runner.invoke(app, ['theme', 'light'])
     assert result.exit_code == 0, result.output
+    assert '\x1b' not in result.output
     assert load().data['general']['theme'] == 'light'
     assert not load().data['general']['icons']
     assert '# keep me' in path.read_text()
@@ -64,3 +65,39 @@ def test_management_commands_and_theme(tmp_path, monkeypatch):
     assert 'theme' in help_output and 'install' in help_output
     for name in ('ls', 'tree', 'git'):
         assert runner.invoke(app, [name]).exit_code != 0
+
+
+def test_theme_applies_to_terminal(monkeypatch):
+    import io
+    from unittest.mock import patch
+    from crux.cli.theme import theme
+    import typer
+
+    class Terminal(io.StringIO):
+        def isatty(self): return True
+
+    monkeypatch.setenv('TERM', 'xterm-256color')
+    monkeypatch.delenv('NO_COLOR', raising=False)
+    from typer.main import get_command
+    ctx = typer.Context(get_command(app))
+    ctx.obj = {}
+    for name, background in [('light', '#f5f7fa'), ('default', '#171b24'), ('light', '#f5f7fa'), ('dark', '#171b24'), ('monochrome', '#181818')]:
+        terminal = Terminal()
+        with patch('sys.stdout', terminal):
+            theme(ctx, name)
+        output = terminal.getvalue()
+        assert f'\x1b]11;{background}\x1b\\' in output
+        assert '\x1b]10;' in output and '\x1b]12;' in output and '\x1b]4;' in output
+        assert f'Theme changed to {name}.' in output
+    for env, value in [('NO_COLOR', ''), ('TERM', 'dumb')]:
+        with monkeypatch.context() as scoped:
+            scoped.setenv(env, value)
+            terminal = Terminal()
+            with patch('sys.stdout', terminal):
+                theme(ctx, 'light')
+            assert '\x1b' not in terminal.getvalue()
+    ctx.obj = {'no_color': True}
+    terminal = Terminal()
+    with patch('sys.stdout', terminal):
+        theme(ctx, 'light')
+    assert '\x1b' not in terminal.getvalue()

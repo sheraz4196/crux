@@ -45,7 +45,7 @@ crux --version
 crux doctor
 crux doctor --json
 crux theme                    # current and available themes
-crux theme light              # default, light, monochrome
+crux theme light              # default, dark, light, monochrome
 crux config
 crux config --json
 crux install --shell bash --dry-run
@@ -83,7 +83,7 @@ show_sizes = true
 enabled = true
 ```
 
-Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. The prompt uses a compact two-line frame with colored directory, Git, environment, and exit-status segments. Theme changes apply to the next prompt and command output; `monochrome` and `NO_COLOR` disable prompt colors. Themes style Crux output rather than changing the terminal emulator background. Crux collects no telemetry.
+Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. The prompt uses a compact two-line frame with colored directory, Git, environment, and exit-status segments. Theme changes update the terminal background, default text, cursor, and sixteen ANSI colours immediately, and apply again at each shell prompt. `light` uses a pale background with dark text; `default` uses a dark background; `monochrome` uses a dark grayscale palette without coloured prompt segments. Terminal-wide colours require an emulator supporting OSC 4/10/11/12 (such as GNOME Terminal or xterm). `NO_COLOR` and `TERM=dumb` suppress colour controls; `--no-color` suppresses them for the theme command. Redirected theme-command output contains no escapes. Crux collects no telemetry.
 
 ## Development
 

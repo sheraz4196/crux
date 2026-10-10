@@ -5,7 +5,7 @@ from crux.cli.common import context, fail
 from crux.core.filesystem import scan
 
 
-@app.command()
+@app.command('_tree', hidden=True)
 def tree(ctx: typer.Context, path: Path = typer.Argument(Path('.')), depth: int = typer.Option(3, '--depth', min=0, max=100), hidden: bool = typer.Option(False, '--hidden', '-a'), no_color: bool = typer.Option(False, '--no-color'), max_entries: int = typer.Option(1000, '--max-entries', min=1)):
     """Show a bounded tree; directory symlinks are never followed."""
     renderer, config = context(ctx, no_color)

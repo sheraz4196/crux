@@ -3,6 +3,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from crux.core.platform import config_path
+from crux.render.theme import THEMES
 
 DEFAULTS = {
     "general": {"theme": "default", "icons": True, "animations": False},
@@ -36,7 +37,7 @@ def load(path=None):
         for key, value in values.items():
             if key not in data[section] or type(value) is not type(data[section][key]):
                 warnings.append(f"Invalid configuration setting: {section}.{key}")
-            elif key == "theme" and value != "default":
+            elif key == "theme" and value not in THEMES:
                 warnings.append(f"Unknown theme {value}; using default.")
             else:
                 data[section][key] = value

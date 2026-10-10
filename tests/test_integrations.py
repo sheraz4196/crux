@@ -118,3 +118,46 @@ def test_atomic_failure(tmp_path, monkeypatch):
     monkeypatch.setattr(os, 'replace', failed_replace)
     with pytest.raises(OSError): edit_profile(path, 'bash')
     assert path.read_text() == 'original\n'
+
+
+def test_bash_command_routing(tmp_path):
+    """TTY output gets Crux; flags, other subcommands and pipes stay native."""
+    bash = shutil.which('bash')
+    if not bash:
+        pytest.skip('Bash unavailable')
+    bindir = tmp_path / 'bin'
+    bindir.mkdir()
+    for name in ('crux', 'git', 'ls', 'tree'):
+        executable = bindir / name
+        executable.write_text(f'#!/bin/sh\nprintf "{name}:%s\\n" "$*"\n')
+        executable.chmod(0o755)
+    profile = tmp_path / 'profile'
+    edit_profile(profile, 'bash')
+    # Override the terminal predicate to exercise routing without a real terminal.
+    script = f'''export PATH="{bindir}:$PATH"
+source "{profile}"
+[() {{ if test "$1" = -t; then return 0; else builtin [ "$@"; fi; }}
+git status
+git status --porcelain
+git diff
+ls
+tree
+unset -f '['
+git status | cat
+'''
+    result = subprocess.run([bash, '--noprofile', '--norc', '-c', script], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        'crux:_git status', 'git:status --porcelain', 'git:diff',
+        'crux:_ls', 'crux:_tree', 'git:status',
+    ]
+
+
+def test_upgrade_old_integration(tmp_path):
+    path = tmp_path / 'profile'
+    path.write_text('before\n# >>> crux >>>\n# old prompt only\n# <<< crux <<<\nafter\n')
+    assert edit_profile(path, 'bash')
+    assert 'git()' in path.read_text()
+    assert not edit_profile(path, 'bash')
+    edit_profile(path, 'bash', remove=True)
+    assert path.read_text() == 'before\nafter\n'

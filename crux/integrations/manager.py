@@ -14,7 +14,8 @@ def block(shell):
     if shell == 'bash':
         # Command substitution is evaluated by Bash after decoding PS1, so prompt
         # data is never evaluated as shell syntax. Existing hooks remain intact.
-        body = '''if command -v crux >/dev/null 2>&1; then
+        body = '''export PATH="$HOME/.local/bin:$PATH"
+if command -v crux >/dev/null 2>&1; then
   if [ "${_CRUX_ACTIVE:-}" != 1 ]; then
     _CRUX_OLD_PS1=$PS1
     _CRUX_ACTIVE=1
@@ -22,7 +23,8 @@ def block(shell):
   fi
 fi'''
     elif shell == 'zsh':
-        body = '''if (( $+commands[crux] )); then
+        body = '''export PATH="$HOME/.local/bin:$PATH"
+if (( $+commands[crux] )); then
   if [[ ${_CRUX_ACTIVE:-} != 1 ]]; then
     _CRUX_OLD_PS1=$PS1
     _CRUX_ACTIVE=1
@@ -51,6 +53,43 @@ fi'''
 }'''
     else:
         raise ValueError('Safe automatic integration is available for bash, zsh, and powershell. cmd and Fish remain unchanged.')
+    if shell in ('bash', 'zsh'):
+        body += """
+if command -v crux >/dev/null 2>&1; then
+  git() {
+    if [ -t 1 ] && [ "$#" -eq 1 ] && [ "$1" = status ]; then
+      crux _git status
+    else
+      command git "$@"
+    fi
+  }
+  ls() {
+    if [ -t 1 ] && [ "$#" -eq 0 ]; then
+      crux _ls
+    else
+      command ls "$@"
+    fi
+  }
+  tree() {
+    if [ -t 1 ] && [ "$#" -eq 0 ]; then
+      crux _tree
+    else
+      command tree "$@"
+    fi
+  }
+fi"""
+    elif shell == 'powershell':
+        body += """
+if (Get-Command crux -ErrorAction SilentlyContinue) {
+  $global:CruxNativeGit = (Get-Command git -CommandType Application -ErrorAction SilentlyContinue).Source
+  function global:git {
+    if (-not [Console]::IsOutputRedirected -and $args.Count -eq 1 -and $args[0] -eq 'status') {
+      & crux _git status
+    } elseif ($global:CruxNativeGit) {
+      & $global:CruxNativeGit @args
+    } else { throw 'Git is not installed.' }
+  }
+}"""
     return START + '\n' + body + '\n' + END + '\n'
 
 
@@ -81,13 +120,16 @@ def edit_profile(path, shell, remove=False):
     else:
         integration = block(shell)
         if START in text:
-            return False
-        # Put the separator inside our block's owned span by requiring a clean
-        # line boundary. A missing final newline is restored on removal.
-        prefix = '\n' if text and not text.endswith('\n') else ''
-        updated = text + prefix + integration
-        if prefix:
-            updated = updated.replace(START + '\n', START + '\n# crux: original-no-final-newline\n', 1)
+            if '# crux: original-no-final-newline\n' in text:
+                integration = integration.replace(START + '\n', START + '\n# crux: original-no-final-newline\n', 1)
+            updated = PATTERN.sub(lambda match: integration, text)
+        else:
+            # Put the separator inside our block's owned span by requiring a clean
+            # line boundary. A missing final newline is restored on removal.
+            prefix = '\n' if text and not text.endswith('\n') else ''
+            updated = text + prefix + integration
+            if prefix:
+                updated = updated.replace(START + '\n', START + '\n# crux: original-no-final-newline\n', 1)
     if updated == text:
         return False
     if remove and '# crux: original-no-final-newline\n' in text:

@@ -12,8 +12,8 @@ def integration(shell, profile, yes, remove, dry_run):
         content = block(shell)
         path = profile or profile_path(shell)
         existing = read_profile(path)
-        if (START in existing) != remove:
-            typer.echo('CRUX is already installed.' if not remove else 'No CRUX integration found.')
+        if remove and START not in existing:
+            typer.echo('No CRUX integration found.')
             return
         typer.echo(f'{"Remove" if remove else "Install"} CRUX integration: {path}')
         if dry_run:
@@ -27,9 +27,10 @@ def integration(shell, profile, yes, remove, dry_run):
         fail(exc)
 
 
-@app.command('init')
+@app.command('install')
+@app.command('init', hidden=True)
 def initialize(shell: str = typer.Option(None, '--shell'), profile: Path = typer.Option(None, '--profile'), yes: bool = typer.Option(False, '--yes', '-y'), dry_run: bool = typer.Option(False, '--dry-run')):
-    """Preview or install optional prompt integration with a profile backup."""
+    """Install prompt and ordinary-command integration with a profile backup."""
     integration(shell, profile, yes, False, dry_run)
 
 

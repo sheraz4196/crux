@@ -13,7 +13,7 @@ from crux.core.terminal import detect
 
 @app.command()
 def theme(ctx: typer.Context, name: str = typer.Argument(None)):
-    """Show the current theme, or select default, dark, light, or monochrome."""
+    """Show the current theme, or select default, dark, light, cobalt, or monochrome."""
     config = load()
     if name is None:
         typer.echo(f"Theme: {config.data['general']['theme']}\nAvailable: {', '.join(THEMES)}")

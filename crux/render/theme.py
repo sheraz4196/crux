@@ -15,6 +15,12 @@ THEMES = {
         "directory": "bold magenta", "file": "blue", "git": "blue",
         "prompt": "magenta",
     },
+    "cobalt": {
+        "primary": "bold yellow", "secondary": "cyan", "success": "green",
+        "warning": "yellow", "error": "bold red", "muted": "blue",
+        "directory": "bold cyan", "file": "white", "git": "magenta",
+        "prompt": "bold yellow",
+    },
     "monochrome": {role: "bold" if role in ("primary", "directory") else "default" for role in ROLES},
 }
 
@@ -23,12 +29,23 @@ PROMPT_COLORS = {
     "default": {"path": "1;96", "git": "95", "environment": "93", "error": "1;91", "frame": "90", "arrow": "1;92"},
     "light": {"path": "1;34", "git": "35", "environment": "36", "error": "1;31", "frame": "34", "arrow": "1;35"},
     "monochrome": {},
+    "cobalt": {"path": "1;33", "git": "35", "environment": "36", "error": "1;31", "frame": "34", "arrow": "1;33"},
 }
 PROMPT_COLORS["dark"] = PROMPT_COLORS["default"]
 
 # ANSI slots 0–7 and their bright counterparts 8–15. Keep light-theme
 # colours dark enough to read against its background, including bold text.
 TERMINAL_THEMES = {
+    # Wes Bos's official Cobalt2 VS Code terminal palette, including its
+    # darker terminal background and signature golden cursor.
+    # https://github.com/wesbos/cobalt2-vscode/blob/master/theme/cobalt2.json
+    "cobalt": {
+        "background": "#122738", "foreground": "#ffffff", "cursor": "#ffc600",
+        "ansi": ("#000000", "#ff628c", "#3ad900", "#ffc600",
+                 "#0088ff", "#fb94ff", "#80fcff", "#ffffff",
+                 "#0050a4", "#ff628c", "#3ad900", "#ffc600",
+                 "#0088ff", "#fb94ff", "#80fcff", "#ffffff"),
+    },
     "default": {
         "background": "#171b24", "foreground": "#e6edf3", "cursor": "#e6edf3",
         "ansi": ("#202632", "#f07178", "#8bd49c", "#e5c07b",

@@ -45,7 +45,8 @@ crux --version
 crux doctor
 crux doctor --json
 crux theme                    # current and available themes
-crux theme light              # default, dark, light, monochrome
+crux theme light              # default, dark, light, cobalt, monochrome
+crux theme cobalt             # Wes Bos's Cobalt2 terminal palette
 crux config
 crux config --json
 crux install --shell bash --dry-run

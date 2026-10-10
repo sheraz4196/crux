@@ -81,7 +81,7 @@ def test_theme_applies_to_terminal(monkeypatch):
     from typer.main import get_command
     ctx = typer.Context(get_command(app))
     ctx.obj = {}
-    for name, background in [('light', '#f5f7fa'), ('default', '#171b24'), ('light', '#f5f7fa'), ('dark', '#171b24'), ('monochrome', '#181818')]:
+    for name, background in [('light', '#f5f7fa'), ('default', '#171b24'), ('light', '#f5f7fa'), ('dark', '#171b24'), ('monochrome', '#181818'), ('cobalt', '#122738')]:
         terminal = Terminal()
         with patch('sys.stdout', terminal):
             theme(ctx, name)

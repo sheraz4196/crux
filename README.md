@@ -34,11 +34,28 @@ The distribution is `crux-terminal`; it is not yet published to PyPI. Installing
 git status
 ls
 tree
+cat README.md
 ```
 
 In an integrated Bash/Zsh shell, these exact commands render Crux's branch/change summary, directory listing, and bounded tree. PowerShell currently supports `git status` and the prompt. Other Git commands and commands with arguments/options use the original executable. Pipes and redirected output use native commands in Bash/Zsh, preserving machine-readable behavior. PowerShell supports console redirection detection; its internal pipelines have different semantics and are not automatically detected. Use `git.exe` for native Git in PowerShell pipelines.
 
-Use `command git status`, `command ls`, or `command tree` in Bash/Zsh to explicitly bypass Crux. Native `tree` must be installed for tree calls with arguments or redirected output. Git must be installed for Git support. The integration clears aliases named `git`, `ls`, and `tree` in the running shell so these functions take precedence. Unrelated aliases remain intact, and the original alias definitions in your profile are preserved.
+Use `command git status`, `command ls`, or `command tree` in Bash/Zsh to explicitly bypass Crux. Native `tree` must be installed for tree calls with arguments or redirected output. Git must be installed for Git support. The integration clears aliases named `git`, `ls`, `tree`, and `cat` in the running shell so these functions take precedence. Unrelated aliases remain intact, and the original alias definitions in your profile are preserved.
+
+## File viewer
+
+In Bash/Zsh, `cat FILE` shows a framed source view with a filename header, detected language, line numbers, preserved indentation, and wrapped long lines. Syntax colours follow the selected theme, including Cobalt. Markdown is shown as highlighted source so headings, links, and fenced blocks remain visible. Multiple files get separate frames.
+
+```sh
+cat README.md
+cat crux/cli/cat.py pyproject.toml
+crux view README.md               # explicit viewer, also on Windows/PowerShell
+crux view crux/cli/cat.py --no-color
+command cat README.md            # native cat in Bash/Zsh
+```
+
+The Bash/Zsh wrapper uses native `cat` for options, `-` (stdin), no arguments, non-regular files, pipes, and output redirection. `cat file | other-command` and `cat file > copy` keep raw native output. Use `command cat` for binary files, other encodings, or files larger than the viewer's 2 MiB limit. The viewer accepts UTF-8 and BOM-marked UTF-16, and escapes embedded terminal control characters. Unknown file types fall back to plain text. PowerShell's `cat` alias remains native; use `crux view` there. `crux view` always produces the formatted view, even when redirected.
+
+After upgrading an existing installation, rerun `crux install --shell bash --yes` (or `zsh`) and open a new shell to load the new wrapper.
 
 ## Crux operations
 

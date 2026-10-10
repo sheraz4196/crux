@@ -172,12 +172,14 @@ def test_bash_aliases_and_real_terminal(tmp_path):
         pytest.skip('Bash unavailable')
     bindir = tmp_path / 'bin'
     bindir.mkdir()
-    for name in ('crux', 'git', 'ls', 'tree'):
+    for name in ('crux', 'git', 'ls', 'tree', 'cat'):
         executable = bindir / name
         executable.write_text(f'#!/bin/sh\nprintf "{name}:%s\\n" "$*"\n')
         executable.chmod(0o755)
     profile = tmp_path / 'profile'
-    profile.write_text("alias ls='ls --color=auto'\nalias git='git --no-pager'\nalias tree='tree -C'\nalias personal='echo personal-ok'\n")
+    profile.write_text("alias ls='ls --color=auto'\nalias git='git --no-pager'\nalias tree='tree -C'\nalias cat='cat -n'\nalias personal='echo personal-ok'\n")
+    source = tmp_path / 'code with spaces.py'
+    source.write_text('print("hello")\n')
     edit_profile(profile, 'bash')
     script = f'''source "{profile}"
 source "{profile}"
@@ -187,6 +189,11 @@ tree
 git status --porcelain
 git diff
 ls | cat
+cat "{source}"
+cat -n "{source}"
+cat "{source}" | /usr/bin/cat
+cat "{source}" > "{tmp_path}/redirected"
+cat -
 personal
 '''
     master, slave = pty.openpty()
@@ -212,5 +219,8 @@ personal
     assert result.stderr == b''
     assert output.decode().splitlines() == [
         'crux:_ls', 'crux:_git status', 'crux:_tree',
-        'git:status --porcelain', 'git:diff', 'ls:', 'personal-ok',
+        'git:status --porcelain', 'git:diff', 'cat:',
+        f'crux:_cat -- {source}', f'cat:-n {source}', f'cat:{source}',
+        'cat:-', 'personal-ok',
     ]
+    assert (tmp_path / 'redirected').read_text() == f'cat:{source}\n'

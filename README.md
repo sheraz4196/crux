@@ -36,7 +36,7 @@ tree
 
 In an integrated Bash/Zsh shell, these exact commands render Crux's branch/change summary, directory listing, and bounded tree. PowerShell currently supports `git status` and the prompt. Other Git commands and commands with arguments/options use the original executable. Pipes and redirected output use native commands in Bash/Zsh, preserving machine-readable behavior. PowerShell supports console redirection detection; its internal pipelines have different semantics and are not automatically detected. Use `git.exe` for native Git in PowerShell pipelines.
 
-Use `command git status`, `command ls`, or `command tree` in Bash/Zsh to explicitly bypass Crux. Native `tree` must be installed for tree calls with arguments or redirected output. Git must be installed for Git support. Shell functions take precedence over executable lookup; personal aliases may still take precedence over these functions.
+Use `command git status`, `command ls`, or `command tree` in Bash/Zsh to explicitly bypass Crux. Native `tree` must be installed for tree calls with arguments or redirected output. Git must be installed for Git support. The integration clears aliases named `git`, `ls`, and `tree` in the running shell so these functions take precedence. Unrelated aliases remain intact, and the original alias definitions in your profile are preserved.
 
 ## Crux operations
 
@@ -83,7 +83,7 @@ show_sizes = true
 enabled = true
 ```
 
-Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. Crux collects no telemetry.
+Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. The prompt uses a compact two-line frame with colored directory, Git, environment, and exit-status segments. Theme changes apply to the next prompt and command output; `monochrome` and `NO_COLOR` disable prompt colors. Themes style Crux output rather than changing the terminal emulator background. Crux collects no telemetry.
 
 ## Development
 

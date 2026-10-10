@@ -4,8 +4,8 @@ from crux.render.renderer import Renderer
 
 
 def context(ctx, no_color=False):
-    renderer = Renderer(no_color or bool((ctx.obj or {}).get('no_color')))
     config = load()
+    renderer = Renderer(no_color or bool((ctx.obj or {}).get('no_color')), theme=config.data['general']['theme'])
     for warning in config.warnings:
         typer.echo(f'Warning: {warning}', err=True)
     return renderer, config

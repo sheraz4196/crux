@@ -5,7 +5,7 @@ from crux.cli.common import context, fail
 from crux.core.filesystem import scan, human_size
 
 
-@app.command('ls')
+@app.command('_ls', hidden=True)
 def listing(ctx: typer.Context, path: Path = typer.Argument(Path('.')), hidden: bool = typer.Option(False, '--hidden', '-a'), long: bool = typer.Option(False, '--long', '-l'), size: bool = typer.Option(False, '--size'), no_color: bool = typer.Option(False, '--no-color')):
     """List a directory, with optional hidden entries and file sizes."""
     renderer, config = context(ctx, no_color)

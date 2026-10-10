@@ -1,44 +1,67 @@
 # CRUX
 
-Make the terminal yours.
+Make the terminal yours. Crux is a local-first terminal enhancement toolkit for Python 3.11+.
 
-CRUX v0.1 is an offline, local-first terminal enhancement toolkit for Python 3.11+. It works inside your existing terminal and shell. It does not replace either, intercept commands, change PATH, or collect telemetry.
+## Install without activation
 
-## Install
-
-From this checkout:
+From this checkout on Linux/macOS with Bash or Zsh:
 
 ```sh
-python3 -m venv .venv
-# Linux/macOS
-source .venv/bin/activate
-# Windows PowerShell: .venv\Scripts\Activate.ps1
-python -m pip install .
-crux --version
+./install.sh --shell bash
+# Zsh: ./install.sh --shell zsh
 ```
 
-The distribution is named `crux-terminal`; the executable is `crux`. This checkout is not published to PyPI. Dependency installation needs a package index or locally supplied wheels; installed CRUX operates offline.
+The installer creates an isolated environment under `${XDG_DATA_HOME:-~/.local/share}/crux`, links `crux` into `~/.local/bin`, and installs a backed-up shell profile block. Open a new terminal afterward. No virtual environment activation or per-session setup is needed. Python's `venv` support must be installed; dependency installation needs a package index or local wheels. Crux runs offline after installation.
 
-## Commands
+Alternatively, use pipx (including on Windows):
 
 ```sh
-crux doctor                 # system, shell, terminal, tools and config
+pipx install .
+pipx ensurepath
+# Open a new terminal if pipx changed PATH.
+crux install --shell bash --yes
+# Zsh: crux install --shell zsh --yes
+# PowerShell: crux install --shell powershell --profile "$PROFILE" --yes
+```
+
+The distribution is `crux-terminal`; it is not yet published to PyPI. Installing a Python wheel alone does not modify shell profiles; use `crux install` to connect your shell.
+
+## Everyday commands
+
+```sh
+git status
+ls
+tree
+```
+
+In an integrated Bash/Zsh shell, these exact commands render Crux's branch/change summary, directory listing, and bounded tree. PowerShell currently supports `git status` and the prompt. Other Git commands and commands with arguments/options use the original executable. Pipes and redirected output use native commands in Bash/Zsh, preserving machine-readable behavior. PowerShell supports console redirection detection; its internal pipelines have different semantics and are not automatically detected. Use `git.exe` for native Git in PowerShell pipelines.
+
+Use `command git status`, `command ls`, or `command tree` in Bash/Zsh to explicitly bypass Crux. Native `tree` must be installed for tree calls with arguments or redirected output. Git must be installed for Git support. Shell functions take precedence over executable lookup; personal aliases may still take precedence over these functions.
+
+## Crux operations
+
+```sh
+crux --version
+crux doctor
 crux doctor --json
-crux ls [path]              # directories first, sizes, symlink labels
-crux ls -a -l --no-color
-crux tree [path] --depth 2  # default depth 3, maximum 1000 entries
-crux tree --max-entries 200
-crux git status [path]      # branch, ahead/behind, index/worktree changes
+crux theme                    # current and available themes
+crux theme light              # default, light, monochrome
 crux config
 crux config --json
+crux install --shell bash --dry-run
+crux uninstall --shell bash --yes
 crux --help
 ```
 
-`--no-color` works globally and on display commands. `NO_COLOR` also disables colors. Redirected output contains no color escapes. Text is rendered literally, including filenames containing Rich markup; control characters are escaped. ASCII terminals use text icons and tree branches. Trees never descend through symlinks. Operational errors exit with status 1; configuration problems warn on stderr and use defaults.
+`crux` is reserved for Crux management. The rendering helpers are private commands used by the integration. `crux init` remains a hidden compatibility alias for `crux install`.
+
+Profile installation offers confirmation unless `--yes` is provided. It creates `<profile>.crux-backup` once, preserves unrelated configuration, and refuses symlinked profiles, malformed markers, and non-UTF-8 text. Open a new shell after installation/removal. Bash login profiles must source `.bashrc`; Zsh uses `$ZDOTDIR/.zshrc` when configured. Fish and cmd integration are currently unsupported.
+
+Removal deletes only Crux's marked profile block. To remove the package too, use `pipx uninstall crux-terminal` for pipx installs. For `install.sh` installs, remove `~/.local/bin/crux` and the isolated `crux/venv` directory after removing integration.
 
 ## Configuration
 
-No configuration file is required. CRUX reads `$XDG_CONFIG_HOME/crux/config.toml` or `~/.config/crux/config.toml` on Linux/macOS, and `%APPDATA%\CRUX\config.toml` on Windows. `crux config` shows the effective values and path. v0.1 inspects configuration; edit TOML yourself to customize it.
+Crux reads `$XDG_CONFIG_HOME/crux/config.toml` or `~/.config/crux/config.toml` on Linux/macOS, and `%APPDATA%\CRUX\config.toml` on Windows. `crux config` shows the effective values and path. No file is required. `crux theme NAME` saves the selected theme while retaining unrelated TOML settings and comments.
 
 ```toml
 [general]
@@ -60,34 +83,9 @@ show_sizes = true
 enabled = true
 ```
 
-Only the default semantic theme is implemented. Animations are reserved and inactive in v0.1. Invalid individual values fall back to defaults without overwriting your file. The prompt shows directory, Git state, active virtual environment, Node project presence, and previous exit status. It avoids invoking Node at every prompt. Git prompt reads have a 30 ms timeout and degrade to a directory prompt if unavailable. Local Python 3.14 measurements put complete prompt process startup at roughly 78–81 ms, above the ideal 50 ms goal; in-process rendering is under 50 ms. Large-repository and other-platform measurements remain pending. `enabled = false` uses a minimal prompt; uninstall integration to restore your original prompt.
+Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. Crux collects no telemetry.
 
-## Optional shell integration
-
-Bash and Zsh support automatic profile location. PowerShell requires the actual profile path explicitly; this handles different PowerShell editions and hosts without guessing.
-
-```sh
-crux init --shell bash --dry-run
-crux init --shell bash
-# Zsh: crux init --shell zsh
-# PowerShell:
-# crux init --shell powershell --profile "$PROFILE" --dry-run
-# crux init --shell powershell --profile "$PROFILE"
-```
-
-Review the preview before installation. Installation asks for confirmation; `--yes` is available for scripts. CRUX appends one marked block and creates `<profile>.crux-backup` once, preserves unrelated configuration, and refuses malformed markers, symlinks and non-UTF-8 profiles. Existing prompt hooks are retained. Keep `crux` available in your normal shell environment; a project virtual environment must be activated for its executable to be available. If it is unavailable when a shell starts, the block does nothing.
-
-Open a new shell after installation. Bash's `.bashrc` must already be sourced by your login profile when using login shells. Detection uses environment hints and can be overridden with `--shell`. Fish and cmd automatic integration are deliberately unsupported in v0.1; normal commands work in those shells.
-
-```sh
-crux uninstall --shell bash --dry-run
-crux uninstall --shell bash
-# PowerShell: crux uninstall --shell powershell --profile "$PROFILE"
-```
-
-Removal deletes only the marked block and never restores a stale backup over subsequent edits. Open a new shell afterward to restore its original prompt. To remove the Python package, run `python -m pip uninstall crux-terminal` after removing integration.
-
-## Development and verification
+## Development
 
 ```sh
 python -m pip install -e '.[dev]'
@@ -95,6 +93,4 @@ python -m pytest
 python -m build
 ```
 
-Tests isolate configuration, create temporary Git repositories and profiles, and check CLI output, errors, terminal fallbacks, prompt context and shell preservation. CI runs Linux, macOS and Windows on Python 3.11 and 3.14. Real Bash tests run where Bash is available; Zsh/PowerShell tests run where those executables are available. Interactive keyboard behavior still needs manual acceptance on each target shell.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [ACCEPTANCE.md](ACCEPTANCE.md). Future releases can add themes and Fish support without changing the data/presentation separation.
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [ACCEPTANCE.md](ACCEPTANCE.md). Tests use temporary profiles; they do not edit your personal shell configuration.

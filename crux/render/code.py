@@ -1,3 +1,5 @@
+# THIS SHOWS THE FILES BEST POSSIBLE WAY IN THE TEMINAL, WHEN USER USES THE CAT COMMAND 
+
 """Theme-aware syntax colours for the file viewer."""
 from pygments.style import Style
 from pygments.token import Token, Comment, Keyword, Name, String, Number, Operator, Generic, Error

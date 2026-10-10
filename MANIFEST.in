@@ -1,2 +1,2 @@
-include CONTRIBUTING.md ACCEPTANCE.md install.sh
+include CONTRIBUTING.md ACCEPTANCE.md installation.md install.sh
 recursive-include tests *.py

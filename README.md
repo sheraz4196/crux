@@ -2,6 +2,8 @@
 
 Make the terminal yours. Crux is a local-first terminal enhancement toolkit for Python 3.11+.
 
+See [installation.md](installation.md) for Windows, Linux, and macOS requirements, installation steps, updates, and troubleshooting.
+
 ## Install without activation
 
 From this checkout on Linux/macOS with Bash or Zsh:

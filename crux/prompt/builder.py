@@ -5,7 +5,7 @@ from crux.core.environment import virtual_environment
 from crux.core.git import in_repository, status
 from crux.core.text import safe_text
 from crux.core.terminal import detect
-from crux.render.theme import PROMPT_COLORS
+from crux.render.theme import PROMPT_COLORS, terminal_sequences
 
 
 def build(exit_status=0, path=None, configuration=None, shell="plain"):
@@ -38,6 +38,13 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
     # Prompt output is captured by the shell, so stdout itself is not a TTY.
     color = os.environ.get("TERM") != "dumb" and "NO_COLOR" not in os.environ
 
+    def control(sequence):
+        if shell == "bash":
+            return "\x01" + sequence + "\x02"
+        if shell == "zsh":
+            return "%{" + sequence + "%}"
+        return sequence
+
     def paint(value, role):
         value = safe_text(value)
         if shell == "zsh":
@@ -45,14 +52,9 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
         code = palette.get(role)
         if not color or not code:
             return value
-        def control(sequence):
-            if shell == "bash":
-                return "\x01" + sequence + "\x02"
-            if shell == "zsh":
-                return "%{" + sequence + "%}"
-            return sequence
         return control(f"\x1b[{code}m") + value + control("\x1b[0m")
 
     top, bottom, arrow, separator = ("╭─", "╰─", "❯", " · ") if capabilities.unicode else ("+-", "+-", ">", " | ")
     content = paint(separator, "frame").join(paint(value, role) for value, role in parts)
-    return paint(top, "frame") + " " + content + "\n" + paint(bottom, "frame") + " " + paint(arrow, "error" if exit_status else "arrow") + " "
+    terminal = control(terminal_sequences(config["general"]["theme"])) if color else ""
+    return terminal + paint(top, "frame") + " " + content + "\n" + paint(bottom, "frame") + " " + paint(arrow, "error" if exit_status else "arrow") + " "

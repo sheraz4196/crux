@@ -64,7 +64,7 @@ def test_management_commands_and_theme(tmp_path, monkeypatch):
     help_output = runner.invoke(app, ['--help']).output
     assert 'theme' in help_output and 'install' in help_output
     for name in ('ls', 'tree', 'git'):
-        assert runner.invoke(app, [name]).exit_code != 0
+        assert runner.invoke(app, [name, '--help']).exit_code == 0
 
 
 def test_theme_applies_to_terminal(monkeypatch):

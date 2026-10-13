@@ -142,10 +142,37 @@ def test_optional_prompt_failures(tmp_path):
     (tmp_path / '.git').mkdir()
     (tmp_path / '.git/HEAD').write_text('ref: refs/heads/main')
     with patch('crux.prompt.builder.status', side_effect=ValueError('timeout')):
-        assert build(path=tmp_path).endswith('> ')
+        value = build(path=tmp_path)
+        assert value.endswith('> ')
+        assert 'main' in value and 'clean' not in value
     config = load()
     config.data['prompt']['enabled'] = False
     assert build(configuration=config) == '> '
+
+
+def test_prompt_timeout_in_linked_worktree(tmp_path):
+    directory = tmp_path / 'git metadata'
+    directory.mkdir()
+    (directory / 'HEAD').write_text('ref: refs/heads/feature/windows\n')
+    worktree = tmp_path / 'worktree'
+    worktree.mkdir()
+    (worktree / '.git').write_text('gitdir: ../git metadata\n')
+    with patch('crux.prompt.builder.status', side_effect=ValueError('timeout')):
+        value = build(path=worktree)
+    assert 'feature/windows' in value and 'clean' not in value
+
+
+def test_branch_fallback_detached_and_invalid_head(tmp_path):
+    from crux.core.git import current_branch
+    directory = tmp_path / '.git'
+    directory.mkdir()
+    head = directory / 'HEAD'
+    head.write_text('abcdef0123456789' + '0' * 24)
+    assert current_branch(tmp_path) == 'abcdef0'
+    head.write_text('invalid')
+    assert current_branch(tmp_path) is None
+    with patch.object(Path, 'read_text', side_effect=PermissionError('denied')):
+        assert current_branch(tmp_path) is None
 
 
 def test_prompt_themes_and_shell_width_markers(tmp_path, monkeypatch):

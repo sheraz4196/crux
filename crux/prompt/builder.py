@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from crux.config.manager import load
 from crux.core.environment import virtual_environment
-from crux.core.git import in_repository, status
+from crux.core.git import current_branch, in_repository, status
 from crux.core.text import safe_text
 from crux.core.terminal import detect
 from crux.render.theme import PROMPT_COLORS, terminal_sequences
@@ -26,7 +26,10 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
             if git.ahead or git.behind:
                 parts.append((f"+{git.ahead}/-{git.behind}", "git"))
         except ValueError:
-            pass
+            # Process startup can exceed the budget on Windows. Keep the branch
+            # visible without claiming that an unqueried working tree is clean.
+            if branch := current_branch(path):
+                parts.append((branch, "git"))
     if config["prompt"]["show_python"] and (venv := virtual_environment()):
         parts.append((f"({venv})", "environment"))
     if config["prompt"]["show_node"] and (path / "package.json").is_file():

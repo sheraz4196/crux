@@ -8,5 +8,8 @@ dist/
 /plan
 /contexts
 
+# I KEEP GITHUB WORKFLOW LOGS HERE WHEN THEY FAIL TO FIX THEM
+/logs.txt
+
 # Generated local prompt benchmark results
 /verification/prompt-*.json

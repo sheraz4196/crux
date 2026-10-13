@@ -21,7 +21,7 @@ def current_branch(path):
     """Read HEAD without a subprocess, including linked worktrees."""
     path = Path(path).resolve()
     for parent in (path, *path.parents):
-        directory = paren0st / ".git"
+        directory = parent / ".git"
         try:
             if directory.is_file():
                 marker = directory.read_text(encoding="utf-8").strip()

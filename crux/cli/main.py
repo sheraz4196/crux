@@ -1,7 +1,7 @@
 import typer
 from crux import __version__
 
-app = typer.Typer(help='CRUX — Make the terminal yours.', no_args_is_help=True)
+app = typer.Typer(help='CRUX — Make the terminal yours.', no_args_is_help=True, rich_markup_mode=None)
 
 
 def version(value: bool):

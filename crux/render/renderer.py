@@ -11,7 +11,7 @@ from crux.core.text import safe_text
 class Renderer:
     def __init__(self, no_color=False, theme="default"):
         self.capabilities = detect(no_color=no_color)
-        self.console = Console(theme=Theme(THEMES.get(theme, THEMES["default"])), no_color=not self.capabilities.color, force_terminal=self.capabilities.color, highlight=False)
+        self.console = Console(theme=Theme(THEMES.get(theme, THEMES["default"])), color_system="truecolor" if self.capabilities.truecolor else "auto", no_color=not self.capabilities.color, force_terminal=self.capabilities.color, highlight=False)
 
     def line(self, value="", role="file"):
         self.console.print(Text(safe_text(value), style=role), soft_wrap=True)

@@ -16,3 +16,14 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
       - run: python -m build
+      - name: Verify wheel in a clean environment
+        run: python -c "import glob, subprocess, sys; subprocess.run([sys.executable, 'scripts/verify_wheel.py', glob.glob('dist/*.whl')[0]], check=True)"
+      - name: Verify source installer in a disposable home
+        if: runner.os != 'Windows'
+        run: python scripts/verify_installer.py --source .
+      - name: Record end-to-end prompt timings
+        run: python scripts/benchmark_prompt.py --samples 10 --output prompt-benchmark.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prompt-timings-${{ matrix.os }}-${{ matrix.python }}
+          path: prompt-benchmark.json

@@ -1,5 +1,6 @@
 import os
 import shutil
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -70,7 +71,7 @@ cat "{tmp_path}/output"
 complete -p personal_function
 printf '%s\\n' "$PROMPT_COMMAND"
 false
-printf '%s\\n' "${{PS1@P}}"
+eval 'printf "%s\\n" "'"$PS1"'"'
 '''
     result = subprocess.run([bash, '--noprofile', '--norc', '-O', 'expand_aliases', '-c', script], env=env, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
@@ -89,7 +90,8 @@ def test_other_shells_when_available(tmp_path, shell):
     if shell == 'zsh':
         path.write_text("alias personal='echo alias-ok'\nalias git='echo native-git'\nls() { echo native-ls; }\npersonal_function() { echo function-ok; }\nexport PERSONAL=value\nPS1='original> '\n")
         command = f'source "{path}"\npersonal\npersonal_function\nprint -r -- "$PERSONAL"\nprint pipe-ok | cat\ngit status\nls\ncrux_restore_prompt\n[[ $PS1 == "original> " ]] || exit 4\n'
-        args = [executable, '-f', '-c', command]
+        source_line, commands = command.split('\n', 1)
+        args = [executable, '-f', '-c', source_line + '\neval ' + shlex.quote(commands)]
     else:
         path.write_text("function personal { 'alias-ok' }\nfunction personal_function { 'function-ok' }\nfunction git { 'native-git' }\n$env:PERSONAL='value'\nfunction prompt { 'original> ' }\n")
         command = f"$ErrorActionPreference='Stop'; . '{path}'; personal; personal_function; $env:PERSONAL; 'pipe-ok' | Write-Output; $global:LASTEXITCODE=17; prompt; if ($global:LASTEXITCODE -ne 17) {{ exit 1 }}; git status; crux_restore_prompt; if ((prompt) -ne 'original> ') {{ exit 4 }}"
@@ -121,6 +123,7 @@ def test_atomic_failure(tmp_path, monkeypatch):
     assert path.read_text() == 'original\n'
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX executable stubs')
 def test_bash_command_routing(tmp_path):
     """TTY output gets Crux; flags, other subcommands and pipes stay native."""
     bash = shutil.which('bash')
@@ -194,7 +197,7 @@ git diff
 ls | cat
 cat "{source}"
 cat -n "{source}"
-cat "{source}" | /usr/bin/cat
+cat "{source}" | {shlex.quote(shutil.which("cat"))}
 cat "{source}" > "{tmp_path}/redirected"
 cat -
 personal
@@ -203,14 +206,12 @@ personal
     try:
         env = {**os.environ, 'HOME': str(tmp_path), 'PATH': str(bindir) + os.pathsep + os.environ['PATH']}
         result = subprocess.run([bash, '--noprofile', '--norc', '-O', 'expand_aliases', '-c', script], env=env, stdout=slave, stderr=subprocess.PIPE, timeout=10)
-        os.close(slave)
-        slave = None
+        # macOS may discard unread output when the last slave closes.
+        # Drain the completed process's output while the slave remains open.
+        import select
         output = b''
-        while True:
-            try:
-                chunk = os.read(master, 4096)
-            except OSError:
-                break
+        while select.select([master], [], [], 1)[0]:
+            chunk = os.read(master, 4096)
             if not chunk:
                 break
             output += chunk
@@ -332,14 +333,12 @@ git status | command cat
     try:
         env = {**os.environ, 'PATH': str(bindir) + os.pathsep + os.environ['PATH']}
         result = subprocess.run([bash, '--noprofile', '--norc', '-c', script], env=env, stdin=slave, stdout=slave, stderr=subprocess.PIPE, timeout=10)
-        os.close(slave)
-        slave = None
+        # macOS may discard unread output when the last slave closes.
+        # Drain the completed process's output while the slave remains open.
+        import select
         output = b''
-        while True:
-            try:
-                chunk = os.read(master, 4096)
-            except OSError:
-                break
+        while select.select([master], [], [], 1)[0]:
+            chunk = os.read(master, 4096)
             if not chunk:
                 break
             output += chunk

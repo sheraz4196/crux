@@ -56,5 +56,5 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
 
     top, bottom, arrow, separator = ("╭─", "╰─", "❯", " · ") if capabilities.unicode else ("+-", "+-", ">", " | ")
     content = paint(separator, "frame").join(paint(value, role) for value, role in parts)
-    terminal = control(terminal_sequences(config["general"]["theme"])) if color else ""
+    terminal = control(terminal_sequences(config["general"]["theme"])) if color and config["general"].get("terminal_palette", True) else ""
     return terminal + paint(top, "frame") + " " + content + "\n" + paint(bottom, "frame") + " " + paint(arrow, "error" if exit_status else "arrow") + " "

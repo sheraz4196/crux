@@ -1,6 +1,8 @@
 # Release preparation
 
-The v0.2 implementation is unreleased. The plan reserves version/release changes for the maintainer's release decision, so package metadata remains 0.1.0. Nothing has been published and no license has been chosen.
+The maintainer selected **v0.1.0** for the first release and the **MIT license**. This release includes the v0.2 implementation plan. Package and runtime versions remain 0.1.0.
+
+The tag-triggered release workflow runs tests, builds and verifies packages, and publishes wheel, source distribution and SHA-256 checksums to GitHub Releases. PyPI publication is not configured. See [RELEASE_NOTES.md](RELEASE_NOTES.md).
 
 Before authorizing a release:
 

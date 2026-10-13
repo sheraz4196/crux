@@ -13,8 +13,11 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
     config = (configuration or load()).data
     if not config["prompt"]["enabled"]:
         return "> "
-    home = Path.home()
-    label = "~" + str(path)[len(str(home)):] if path == home or home in path.parents else str(path)
+    try:
+        home = Path.home()
+    except RuntimeError:
+        home = None
+    label = "~" + str(path)[len(str(home)):] if home is not None and (path == home or home in path.parents) else str(path)
     parts = [(label, "path")]
     if config["prompt"]["show_git"] and config["git"]["enabled"] and in_repository(path):
         try:

@@ -7,3 +7,6 @@ build/
 dist/
 /plan
 /contexts
+
+# Generated local prompt benchmark results
+/verification/prompt-*.json

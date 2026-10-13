@@ -2,4 +2,3 @@ include CONTRIBUTING.md ACCEPTANCE.md installation.md install.sh
 recursive-include tests *.py
 include RELEASE.md V0.2_IMPLEMENTATION.md
 recursive-include scripts *.py
-recursive-include verification *.json

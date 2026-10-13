@@ -1,94 +1,105 @@
 # CRUX
 
-Make the terminal yours. Crux is a local-first terminal enhancement toolkit for Python 3.11+.
+Make the terminal yours. Crux is a local-first terminal enhancement toolkit for Python 3.11+. It runs inside your existing shell and terminal, without an account, backend, telemetry, or runtime network connection.
 
-See [installation.md](installation.md) for Windows, Linux, and macOS requirements, installation steps, updates, and troubleshooting.
+The first release is **v0.1.0**, under the [MIT license](LICENSE), and includes the v0.2 implementation plan. See [V0.2_IMPLEMENTATION.md](V0.2_IMPLEMENTATION.md) for verification and plan coverage, [installation.md](installation.md) for platform setup, and [RELEASE.md](RELEASE.md) for release preparation.
 
-## Install without activation
+## Install
 
-From this checkout on Linux/macOS with Bash or Zsh:
+From this checkout on Linux/macOS:
 
 ```sh
 ./install.sh --shell bash
 # Zsh: ./install.sh --shell zsh
 ```
 
-The installer creates an isolated environment under `${XDG_DATA_HOME:-~/.local/share}/crux`, links `crux` into `~/.local/bin`, and installs a backed-up shell profile block. Open a new terminal afterward. No virtual environment activation or per-session setup is needed. Python's `venv` support must be installed; dependency installation needs a package index or local wheels. Crux runs offline after installation.
+The script creates or reuses an isolated environment under `${XDG_DATA_HOME:-~/.local/share}/crux/venv` and links `crux` into `~/.local/bin`. No virtual environment activation is required. Your existing PATH must include `~/.local/bin` to find the link in new shells; integration leaves PATH unchanged. Dependency installation needs a package index or local wheels; runtime operation works offline.
 
-Alternatively, use pipx (including on Windows):
+Alternatively, use pipx (including Windows):
 
 ```sh
 pipx install .
 pipx ensurepath
-# Open a new terminal if pipx changed PATH.
+# Reopen the terminal if PATH changed.
 crux install --shell bash --yes
 # Zsh: crux install --shell zsh --yes
 # PowerShell: crux install --shell powershell --profile "$PROFILE" --yes
 ```
 
-The distribution is `crux-terminal`; it is not yet published to PyPI. Installing a Python wheel alone does not modify shell profiles; use `crux install` to connect your shell.
+The distribution is `crux-terminal`; it is not published to PyPI. Package installation alone does not edit profiles. Automatic integration is implemented for Bash, Zsh and PowerShell; local verification status is in the implementation report. Fish and cmd integration remain unsupported.
 
 ## Everyday commands
 
 ```sh
-git status
-ls
-tree
-cat README.md
+crux ls
+crux ls src --hidden --size
+crux ls --json
+crux tree --depth 2 --max-entries 1000
+crux tree --json
+crux git status
+crux view README.md
+crux view crux/cli/cat.py pyproject.toml --no-color
 ```
 
-In an integrated Bash/Zsh shell, these exact commands render Crux's branch/change summary, directory listing, and bounded tree. PowerShell currently supports `git status` and the prompt. Other Git commands and commands with arguments/options use the original executable. Pipes and redirected output use native commands in Bash/Zsh, preserving machine-readable behavior. PowerShell supports console redirection detection; its internal pipelines have different semantics and are not automatically detected. Use `git.exe` for native Git in PowerShell pipelines.
+Native `ls`, `tree`, `git`, and `cat` retain their normal behavior by default. Listing is directory-first, with optional icons, symlink labels, sizes and counts. `--long` adds sizes; it does not provide permissions/owner/time columns. Tree defaults to depth 3 and 1,000 entries and never descends through directory symlinks, including a symlink supplied as the root. Each visited directory is scanned/sorted as a whole, so the display cap is not a strict memory bound.
 
-Use `command git status`, `command ls`, or `command tree` in Bash/Zsh to explicitly bypass Crux. Native `tree` must be installed for tree calls with arguments or redirected output. Git must be installed for Git support. The integration clears aliases named `git`, `ls`, `tree`, and `cat` in the running shell so these functions take precedence. Unrelated aliases remain intact, and the original alias definitions in your profile are preserved.
+`ls --json` and `tree --json` produce structured data with `schema_version: 1`, without terminal markup. Listing includes `path`, `entries`, `directories`, and `files`. Entry fields are `name`, `path`, `directory`, `symlink`, byte `size` (or null), and `error` (or null). Tree adds a flat traversal list with `relative_path` and one-based entry `depth`, root `symlink`, `errors`, `count`, requested `depth`, `max_entries`, and `truncated`. JSON preserves actual names through JSON escaping; text output escapes terminal control characters.
+
+Git summaries show branch, ahead/behind, index/worktree change codes, renames and untracked files. Git itself must be installed; Crux does not fetch or modify repositories.
 
 ## File viewer
 
-In Bash/Zsh, `cat FILE` shows a framed source view with a filename header, detected language, line numbers, preserved indentation, and wrapped long lines. Syntax colours follow the selected theme, including Cobalt. Markdown is shown as highlighted source so headings, links, and fenced blocks remain visible. Multiple files get separate frames.
+`crux view FILE...` shows source with a filename/language/line-count frame, syntax colors, line numbers, indentation, and wrapped long lines. Markdown stays source rather than rendered prose. Multiple files have separate frames; unknown types fall back to plain text.
+
+The viewer accepts regular UTF-8/UTF-8-BOM or BOM-marked UTF-16 text up to 2 MiB per file. Binary data, unsupported encodings, devices and streams require native `cat`. Embedded control characters are escaped. `crux view` deliberately keeps its formatted view when redirected, with color disabled.
+
+## Prompt and shell compatibility
 
 ```sh
-cat README.md
-cat crux/cli/cat.py pyproject.toml
-crux view README.md               # explicit viewer, also on Windows/PowerShell
-crux view crux/cli/cat.py --no-color
-command cat README.md            # native cat in Bash/Zsh
-```
-
-The Bash/Zsh wrapper uses native `cat` for options, `-` (stdin), no arguments, non-regular files, pipes, and output redirection. `cat file | other-command` and `cat file > copy` keep raw native output. Use `command cat` for binary files, other encodings, or files larger than the viewer's 2 MiB limit. The viewer accepts UTF-8 and BOM-marked UTF-16, and escapes embedded terminal control characters. Unknown file types fall back to plain text. PowerShell's `cat` alias remains native; use `crux view` there. `crux view` always produces the formatted view, even when redirected.
-
-After upgrading an existing installation, rerun `crux install --shell bash --yes` (or `zsh`) and open a new shell to load the new wrapper.
-
-## Crux operations
-
-```sh
-crux --version
-crux doctor
-crux doctor --json
-crux theme                    # current and available themes
-crux theme light              # default, dark, light, cobalt, monochrome
-crux theme cobalt             # Wes Bos's Cobalt2 terminal palette
-crux theme cobalt --sync-profile # save GNOME profile colours even from a script
-crux config
-crux config --json
 crux install --shell bash --dry-run
+crux install --shell bash --yes
+crux install --shell bash --keep-prompt --yes
 crux uninstall --shell bash --yes
-crux --help
 ```
 
-`crux` is reserved for Crux management. The rendering helpers are private commands used by the integration. `crux init` remains a hidden compatibility alias for `crux install`.
+Installation replaces the prompt by default, explains this before confirmation, and saves the previous prompt for `crux_restore_prompt` in the current session. Use `--keep-prompt` for an existing prompt framework. Bash prompt hooks and Zsh hooks remain in place; a framework that rewrites PS1 may take precedence. Crux does not attempt to merge arbitrary prompt frameworks. If a function or alias named `crux_restore_prompt` already exists, Crux preserves it; use uninstall and reopen the shell to restore startup behavior.
 
-Profile installation offers confirmation unless `--yes` is provided. It creates `<profile>.crux-backup` once, preserves unrelated configuration, and refuses symlinked profiles, malformed markers, and non-UTF-8 text. Open a new shell after installation/removal. Bash login profiles must source `.bashrc`; Zsh uses `$ZDOTDIR/.zshrc` when configured. Fish and cmd integration are currently unsupported.
+The prompt shows a home-abbreviated path, Git branch/clean-or-dirty/ahead/behind, Python or Conda environment, a local `package.json` Node project marker, and nonzero exit status. Node versions are available in doctor rather than through a subprocess at every prompt. The fast prompt entry avoids Typer/Rich. Git has a 30 ms timeout; total startup overhead is measured separately and the approximately 50 ms target is not guaranteed.
 
-Removal deletes only Crux's marked profile block. To remove the package too, use `pipx uninstall crux-terminal` for pipx installs. For `install.sh` installs, remove `~/.local/bin/crux` and the isolated `crux/venv` directory after removing integration.
+### Optional native wrappers
+
+```sh
+crux install --shell bash --enhance-commands --yes
+# Or --shell zsh. To disable, reinstall without --enhance-commands and reopen.
+```
+
+This explicit opt-in adds wrappers only where no existing alias/function owns `git`, `ls`, `tree`, or `cat`. Existing aliases/functions are never deleted or overridden. With both stdin and stdout on terminals, exact `git status`, argument-free `ls`/`tree`, and regular-file `cat` operands use Crux. Options, other Git subcommands, stdin, pipes, output redirection, and non-regular operands use native commands. Binary/large/unsupported-encoding files still require `command cat`. No general shell parser is used; use namespaced commands for predictable formatted output.
+
+Use `command git`, `command ls`, `command tree`, or `command cat` to bypass wrappers in Bash/Zsh. Native tree fallback needs a separately installed `tree` executable. PowerShell native wrappers are unavailable because internal pipeline detection is ambiguous; use `crux git status` and `crux view` there. Its native commands and aliases remain unchanged.
+
+Profile changes are limited to the marked Crux block. Installation creates `<profile>.crux-backup` once, preserves unrelated text and modes, and refuses symlinked/non-UTF-8 profiles, symlinked backups, and ambiguous markers. Atomic replacement protects against failed writes. Install/update is idempotent; uninstall removes only the block. Reopen the shell after changes, including when upgrading from v0.1's native wrappers. Package/config/backups are retained on shell uninstall. `crux init` remains a hidden alias for install; `_ls`, `_tree`, `_git status`, `_cat`, and `prompt` remain callable compatibility helpers.
 
 ## Configuration
 
-Crux reads `$XDG_CONFIG_HOME/crux/config.toml` or `~/.config/crux/config.toml` on Linux/macOS, and `%APPDATA%\CRUX\config.toml` on Windows. `crux config` shows the effective values and path. No file is required. `crux theme NAME` saves the selected theme while retaining unrelated TOML settings and comments.
+```sh
+crux config
+crux config --json
+crux config get general.theme
+crux config set general.theme cobalt
+crux config set prompt.show_git false
+crux config reset prompt.show_git
+crux config reset             # confirmation required
+crux config reset --yes
+```
+
+Configuration lives at `$XDG_CONFIG_HOME/crux/config.toml` or `~/.config/crux/config.toml` on Linux/macOS and `%APPDATA%\CRUX\config.toml` on Windows. `crux config` prints the actual path. No file is required.
 
 ```toml
 [general]
 theme = "default"
 icons = true
 animations = false
+terminal_palette = true
 
 [prompt]
 enabled = true
@@ -104,14 +115,39 @@ show_sizes = true
 enabled = true
 ```
 
-Invalid settings warn and fall back to defaults. Animations are reserved. `NO_COLOR` disables color; redirected output has no color escapes. Filenames are rendered literally and control characters escaped. Trees never descend through symlinks. Prompt Git reads have a 30 ms timeout; process startup adds overhead. The prompt uses a compact two-line frame with colored directory, Git, environment, and exit-status segments. Theme changes update the terminal background, default text, cursor, and sixteen ANSI colours immediately, and apply again at each shell prompt. `light` uses a pale background with dark text; `default` uses a dark background; `monochrome` uses a dark grayscale palette without coloured prompt segments. Terminal-wide colours require an emulator supporting OSC 4/10/11/12 (such as GNOME Terminal or xterm). `NO_COLOR` and `TERM=dumb` suppress colour controls; `--no-color` suppresses them for the theme command. Redirected theme-command output contains no escapes. In GNOME Terminal, interactive theme selection also saves the selected colours to the default terminal profile, so the scrollbar surround and newly opened windows use the background before the first prompt. The scrollbar handle keeps its desktop GTK styling. The original profile is backed up once beside the Crux configuration as `gnome-terminal-<profile-id>.backup.ini`. Use `--sync-profile` to request this profile update from scripts. Profile-sync failures are reported as warnings while the Crux theme is still saved. Crux collects no telemetry.
+Invalid settings warn and fall back to defaults; animations are reserved. Config editing validates known `SECTION.KEY` settings and boolean/theme values, preserves unrelated parsed data and comments on supported simple table assignments, and writes atomically. Malformed files, symlinks and unsupported layouts are refused rather than overwritten. Reset changes only known settings; unrelated TOML remains. `get` prints the effective value as a JSON scalar. Setting `general.theme` changes the selection for future commands/prompts; use `crux theme NAME` for immediate terminal/profile application.
 
-## Development
+## Themes and recovery
 
 ```sh
+crux theme
+crux theme cobalt
+crux theme light
+crux theme cobalt --sync-profile
+crux theme --reset-terminal
+crux theme --restore-profile
+```
+
+All five existing themes are retained: `default`, `dark` (same palette as default), `light`, `cobalt`, and `monochrome`. They control semantic Crux output, prompt segments and syntax colors. When `general.terminal_palette` is enabled, prompts apply OSC 4/10/11/12 for background, foreground, cursor and sixteen ANSI colors. Emulator support varies and is not actively negotiated; unsupported emulators may ignore them. `NO_COLOR`, `TERM=dumb`, and `crux --no-color theme NAME` suppress runtime controls. Regular redirected command output never includes palette controls; `prompt --shell` deliberately generates shell-captured prompt controls unless suppressed.
+
+GNOME Terminal theme selection can also save colors to its default profile using gsettings/dconf. Interactive selection requests sync automatically; `--sync-profile` requests it from scripts. Profile failures warn after the Crux theme is saved. Original profile data is backed up once beside configuration as `gnome-terminal-<id>.backup.ini`; last verified owned colors are recorded in an `.applied.json` file. Windows/macOS emulator profile settings are not written by Crux. Scrollbar handle styling remains controlled by the desktop.
+
+`--reset-terminal` disables prompt palette writes and sends OSC 104/110/111/112 on interactive color-capable output to request emulator defaults. With redirected output it only saves the opt-out. It does not recover arbitrary colors that existed before Crux, and emulator reset support varies.
+
+`--restore-profile` requires a GNOME session and verified ownership state. It restores only managed color keys, resetting originally unset keys, while retaining newer unrelated settings. If colors have changed since Crux last applied them, recovery refuses to overwrite them. Older v0.1 backups without ownership state need manual recovery: inspect the backup and selectively restore color settings in GNOME Terminal preferences. Do not load the whole backup over newer profile settings. Backups remain after recovery. A failed multi-key restore can be partial; preserve the backup and inspect preferences before retrying. Successful recovery disables prompt palette writes so the next prompt does not undo it. Selecting a theme again reenables palette writes. There is no automatic restoration on process exit or shell uninstall.
+
+## Diagnostics and development
+
+```sh
+crux doctor
+crux doctor --json
+crux doctor --shell powershell --profile "$PROFILE"
 python -m pip install -e '.[dev]'
-python -m pytest
+python -m pytest -q -rs
+python scripts/benchmark_prompt.py --samples 30
 python -m build
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [ACCEPTANCE.md](ACCEPTANCE.md). Tests use temporary profiles; they do not edit your personal shell configuration.
+Doctor remains read-only. It reports existing platform/tool/capability/config fields plus Crux version/location, inferred install method, selected profile marker health, unsupported shells/legacy integration, GNOME prerequisites and actionable guidance. Shell and install-method detection are best-effort; explicit profile/shell options resolve ambiguity. JSON additions preserve the previous top-level fields; warnings go to stderr.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [ACCEPTANCE.md](ACCEPTANCE.md). Tests use temporary profiles and never edit personal startup files. CI runs tests and builds on Ubuntu/macOS/Windows with Python 3.11/3.14 and smoke-tests installed wheels; configured CI does not prove a run passed.

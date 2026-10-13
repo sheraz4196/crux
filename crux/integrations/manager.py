@@ -10,12 +10,11 @@ END = '# <<< crux <<<'
 PATTERN = re.compile(r'^# >>> crux >>>\r?\n.*?^# <<< crux <<<\r?\n?', re.M | re.S)
 
 
-def block(shell):
+def block(shell, enhance_commands=False, keep_prompt=False):
     if shell == 'bash':
         # Command substitution is evaluated by Bash after decoding PS1, so prompt
         # data is never evaluated as shell syntax. Existing hooks remain intact.
-        body = '''export PATH="$HOME/.local/bin:$PATH"
-if command -v crux >/dev/null 2>&1; then
+        body = '''if command -v crux >/dev/null 2>&1; then
   if [ "${_CRUX_ACTIVE:-}" != 1 ]; then
     _CRUX_OLD_PS1=$PS1
     _CRUX_ACTIVE=1
@@ -23,8 +22,7 @@ if command -v crux >/dev/null 2>&1; then
   fi
 fi'''
     elif shell == 'zsh':
-        body = '''export PATH="$HOME/.local/bin:$PATH"
-if (( $+commands[crux] )); then
+        body = '''if (( $+commands[crux] )); then
   if [[ ${_CRUX_ACTIVE:-} != 1 ]]; then
     _CRUX_OLD_PS1=$PS1
     _CRUX_ACTIVE=1
@@ -53,14 +51,41 @@ fi'''
 }'''
     else:
         raise ValueError('Safe automatic integration is available for bash, zsh, and powershell. cmd and Fish remain unchanged.')
-    if shell in ('bash', 'zsh'):
+    if keep_prompt:
+        body = '# crux: prompt=preserved\n'
+    if not keep_prompt and shell in ('bash', 'zsh'):
+        body += """
+if ! alias crux_restore_prompt >/dev/null 2>&1 && ! typeset -f crux_restore_prompt >/dev/null 2>&1; then
+  function crux_restore_prompt {
+    if [ "${_CRUX_ACTIVE:-}" = 1 ]; then
+      PS1=$_CRUX_OLD_PS1
+      unset _CRUX_ACTIVE
+"""
+        if shell == 'zsh':
+            body += '      if [[ $_CRUX_OLD_PROMPT_SUBST == off ]]; then unsetopt promptsubst; fi\n'
+        body += '    fi\n  }\nfi\n'
+    elif not keep_prompt:
+        body += """
+if (-not (Get-Command crux_restore_prompt -ErrorAction SilentlyContinue)) {
+  function global:crux_restore_prompt {
+    if ($global:CruxActive) {
+      if ($global:CruxOldPrompt) { Set-Item -Path Function:global:prompt -Value $global:CruxOldPrompt }
+      else { Remove-Item Function:global:prompt -ErrorAction SilentlyContinue }
+      $global:CruxActive = $false
+    }
+  }
+}
+"""
+    if enhance_commands:
+        if shell == 'powershell':
+            raise ValueError('Native wrappers are unavailable for PowerShell; use crux git status.')
+        body += '\n# crux: native-wrappers=enabled\n'
         body += """
 if command -v crux >/dev/null 2>&1; then
-  # Existing aliases would bypass functions (and can corrupt function parsing).
-  unalias git ls tree cat 2>/dev/null || true
+  if ! alias cat >/dev/null 2>&1 && ! typeset -f cat >/dev/null 2>&1; then
   function cat {
     local _crux_file
-    if [ -t 1 ] && [ "$#" -gt 0 ]; then
+    if [ -t 0 ] && [ -t 1 ] && [ "$#" -gt 0 ]; then
       for _crux_file in "$@"; do
         case "$_crux_file" in
           -*) command cat "$@"; return $? ;;
@@ -75,40 +100,35 @@ if command -v crux >/dev/null 2>&1; then
       command cat "$@"
     fi
   }
+  fi
+  if ! alias git >/dev/null 2>&1 && ! typeset -f git >/dev/null 2>&1; then
   function git {
-    if [ -t 1 ] && [ "$#" -eq 1 ] && [ "$1" = status ]; then
+    if [ -t 0 ] && [ -t 1 ] && [ "$#" -eq 1 ] && [ "$1" = status ]; then
       crux _git status
     else
       command git "$@"
     fi
   }
+  fi
+  if ! alias ls >/dev/null 2>&1 && ! typeset -f ls >/dev/null 2>&1; then
   function ls {
-    if [ -t 1 ] && [ "$#" -eq 0 ]; then
+    if [ -t 0 ] && [ -t 1 ] && [ "$#" -eq 0 ]; then
       crux _ls
     else
       command ls "$@"
     fi
   }
+  fi
+  if ! alias tree >/dev/null 2>&1 && ! typeset -f tree >/dev/null 2>&1; then
   function tree {
-    if [ -t 1 ] && [ "$#" -eq 0 ]; then
+    if [ -t 0 ] && [ -t 1 ] && [ "$#" -eq 0 ]; then
       crux _tree
     else
       command tree "$@"
     fi
   }
+  fi
 fi"""
-    elif shell == 'powershell':
-        body += """
-if (Get-Command crux -ErrorAction SilentlyContinue) {
-  $global:CruxNativeGit = (Get-Command git -CommandType Application -ErrorAction SilentlyContinue).Source
-  function global:git {
-    if (-not [Console]::IsOutputRedirected -and $args.Count -eq 1 -and $args[0] -eq 'status') {
-      & crux _git status
-    } elseif ($global:CruxNativeGit) {
-      & $global:CruxNativeGit @args
-    } else { throw 'Git is not installed.' }
-  }
-}"""
     return START + '\n' + body + '\n' + END + '\n'
 
 
@@ -131,13 +151,13 @@ def read_profile(path):
     return text
 
 
-def edit_profile(path, shell, remove=False):
+def edit_profile(path, shell, remove=False, enhance_commands=False, keep_prompt=False):
     path = Path(path)
     text = read_profile(path)
     if remove:
         updated = PATTERN.sub('', text)
     else:
-        integration = block(shell)
+        integration = block(shell, enhance_commands, keep_prompt)
         if START in text:
             if '# crux: original-no-final-newline\n' in text:
                 integration = integration.replace(START + '\n', START + '\n# crux: original-no-final-newline\n', 1)
@@ -157,6 +177,8 @@ def edit_profile(path, shell, remove=False):
             updated = text[:match.start() - 1] + text[match.end():]
     path.parent.mkdir(parents=True, exist_ok=True)
     backup = path.with_name(path.name + '.crux-backup')
+    if backup.is_symlink():
+        raise ValueError('Refusing symlinked profile backup; no changes made.')
     if path.exists() and not backup.exists():
         shutil.copy2(path, backup)
     # Replace atomically so a failed write cannot truncate the profile.

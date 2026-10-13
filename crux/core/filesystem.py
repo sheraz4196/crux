@@ -35,3 +35,9 @@ def human_size(size):
         if value < 1024 or unit == "TB":
             return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
         value /= 1024
+
+
+def entry_data(entry):
+    """JSON-safe data; keep actual filenames rather than display escapes."""
+    return {'name': entry.path.name, 'path': str(entry.path), 'directory': entry.directory,
+            'symlink': entry.symlink, 'size': entry.size, 'error': entry.error}

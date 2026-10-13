@@ -1,19 +1,23 @@
-# v0.1 manual acceptance
+# v0.2 manual acceptance
 
-Run these checks in a disposable shell profile first, then optionally in your own environment. Automated tests do not establish keyboard behavior or cross-platform performance.
+Use disposable profiles first. This checklist is not a claim that interactive or cross-platform acceptance has passed. Automated results are recorded in [V0.2_IMPLEMENTATION.md](V0.2_IMPLEMENTATION.md).
 
-- [ ] Install from this checkout and run `crux --version` and `crux --help`.
-- [ ] Run `crux doctor`, `crux ls`, `crux tree`, and `crux config`.
-- [ ] Run `crux git status` inside a clean and modified repository.
-- [ ] Redirect a listing and verify it has no color escape sequences.
-- [ ] Preview `crux init --dry-run`, then install for your supported shell.
-- [ ] Reopen the shell and check prompt, aliases, functions, PATH and environment variables.
-- [ ] Verify commands, shell built-ins, history, completion and background jobs.
-- [ ] Verify Ctrl+C, Ctrl+D, Ctrl+Z, Ctrl+L and arrow keys.
-- [ ] Verify pipes, redirection, command substitution and ordinary Git commands.
-- [ ] Measure prompt responsiveness in small and large repositories.
-- [ ] Run init again and verify no duplicate block.
-- [ ] Run `crux uninstall`, reopen, and verify original shell behavior.
-- [ ] Repeat on Linux/Bash, macOS/Zsh, and Windows/PowerShell.
+- [ ] Build/install into a clean environment; check both `crux --version` and `python -m crux --version`.
+- [ ] Run public help, doctor text/JSON, config text/JSON/get/set/reset, ls/tree text/JSON, Git status in clean/dirty repositories, and multi-file view.
+- [ ] Verify all five themes, `NO_COLOR`, `TERM=dumb`, and redirected output without terminal controls.
+- [ ] Preview `crux install --shell SHELL --profile PATH --dry-run`; inspect the prompt replacement explanation and native-wrapper opt-in policy.
+- [ ] Install into a disposable profile; confirm one-time backup, file mode, repeated install, malformed marker refusal and exact removal.
+- [ ] Verify aliases/functions named git/ls/tree/cat, unrelated aliases/functions, PATH, environment, stdin, stdout, pipes and redirection before/after default install and uninstall.
+- [ ] Repeat with Bash/Zsh `--enhance-commands`; confirm existing aliases/functions are skipped and exact supported TTY routes work.
+- [ ] Check unsupported arguments, stdin/no operands/non-regular cat operands, command substitution, and native `command NAME` bypass with opt-in wrappers.
+- [ ] Check `--keep-prompt` with an existing prompt framework and `crux_restore_prompt` in the current session. A user-owned recovery helper must remain unchanged.
+- [ ] Reopen the shell after updating/removing integration, particularly when upgrading from v0.1's native wrappers.
+- [ ] Check completion, history, built-ins, background jobs, job control and shell scripting.
+- [ ] Check Ctrl+C, Ctrl+D, Ctrl+Z, Ctrl+L and arrow keys in real interactive terminals.
+- [ ] In a disposable GNOME profile, sync theme colors; change an unrelated preference; restore colors and confirm the preference remains.
+- [ ] Change a managed GNOME color after sync and confirm recovery refuses to overwrite it. Test repeated recovery and retained backups.
+- [ ] Verify terminal reset controls in supported emulators, and confirm recovery disables prompt palette writes; selecting a theme reenables them.
+- [ ] Record end-to-end prompt median/p95 with `python scripts/benchmark_prompt.py --samples 30`, also using `--executable` for the installed command.
+- [ ] Repeat shell/UI checks on Linux/Bash, macOS/Zsh, and Windows/PowerShell. PowerShell native commands must remain untouched.
 
-cmd and Fish profile integration are deferred. Full Node version detection is available in doctor; the prompt uses a project indicator to avoid a subprocess. The package is not published and a license choice remains with the project owner.
+Fish/cmd integration and PowerShell native wrappers are unsupported. GNOME tests that mock subprocesses do not establish real desktop behavior. OSC reset returns emulator defaults where supported, not a captured arbitrary previous runtime palette. Recovery from a v0.1 backup without ownership state requires selective manual restoration. No colors are restored automatically on shell uninstall.

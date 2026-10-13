@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from crux.config.manager import load
 from crux.core.environment import virtual_environment
-from crux.core.git import in_repository, status
+from crux.core.git import current_branch, in_repository, status
 from crux.core.text import safe_text
 from crux.core.terminal import detect
 from crux.render.theme import PROMPT_COLORS, terminal_sequences
@@ -13,8 +13,11 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
     config = (configuration or load()).data
     if not config["prompt"]["enabled"]:
         return "> "
-    home = Path.home()
-    label = "~" + str(path)[len(str(home)):] if path == home or home in path.parents else str(path)
+    try:
+        home = Path.home()
+    except RuntimeError:
+        home = None
+    label = "~" + str(path)[len(str(home)):] if home is not None and (path == home or home in path.parents) else str(path)
     parts = [(label, "path")]
     if config["prompt"]["show_git"] and config["git"]["enabled"] and in_repository(path):
         try:
@@ -23,7 +26,10 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
             if git.ahead or git.behind:
                 parts.append((f"+{git.ahead}/-{git.behind}", "git"))
         except ValueError:
-            pass
+            # Process startup can exceed the budget on Windows. Keep the branch
+            # visible without claiming that an unqueried working tree is clean.
+            if branch := current_branch(path):
+                parts.append((branch, "git"))
     if config["prompt"]["show_python"] and (venv := virtual_environment()):
         parts.append((f"({venv})", "environment"))
     if config["prompt"]["show_node"] and (path / "package.json").is_file():
@@ -56,5 +62,5 @@ def build(exit_status=0, path=None, configuration=None, shell="plain"):
 
     top, bottom, arrow, separator = ("╭─", "╰─", "❯", " · ") if capabilities.unicode else ("+-", "+-", ">", " | ")
     content = paint(separator, "frame").join(paint(value, role) for value, role in parts)
-    terminal = control(terminal_sequences(config["general"]["theme"])) if color else ""
+    terminal = control(terminal_sequences(config["general"]["theme"])) if color and config["general"].get("terminal_palette", True) else ""
     return terminal + paint(top, "frame") + " " + content + "\n" + paint(bottom, "frame") + " " + paint(arrow, "error" if exit_status else "arrow") + " "

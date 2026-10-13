@@ -8,10 +8,7 @@ runner = CliRunner()
 
 
 def test_commands(tmp_path, monkeypatch):
-    # Typer forces terminal styling under GITHUB_ACTIONS, even in captured help.
-    # Exercise captured-output behavior independently of the CI host settings.
-    import typer.rich_utils
-    monkeypatch.setattr(typer.rich_utils, "FORCE_TERMINAL", None)
+    monkeypatch.setenv('GITHUB_ACTIONS', 'true')
     for args in (['--version'], ['--help'], ['config'], ['doctor', '--json'], ['_ls', str(tmp_path)], ['_tree', str(tmp_path)], ['_git', '--help'], ['init', '--help'], ['uninstall', '--help']):
         result = runner.invoke(app, args)
         assert result.exit_code == 0, result.output
@@ -64,7 +61,7 @@ def test_management_commands_and_theme(tmp_path, monkeypatch):
     help_output = runner.invoke(app, ['--help']).output
     assert 'theme' in help_output and 'install' in help_output
     for name in ('ls', 'tree', 'git'):
-        assert runner.invoke(app, [name]).exit_code != 0
+        assert runner.invoke(app, [name, '--help']).exit_code == 0
 
 
 def test_theme_applies_to_terminal(monkeypatch):

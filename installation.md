@@ -6,17 +6,17 @@ Crux is not published to PyPI yet. Install from this repository or a locally bui
 
 ## Requirements
 
-| Requirement | Details |
-| --- | --- |
-| Python | Python 3.11+, including `pip` and virtual-environment (`venv`) support. Keep Python installed after installing Crux. |
-| Shell | Bash or Zsh on Linux/macOS; PowerShell on Windows. Fish and Command Prompt (`cmd.exe`) integration are currently unsupported. |
-| Terminal | A terminal supporting ANSI colours. Background, cursor, and palette changes require OSC 4/10/11/12 support; support varies by emulator. |
+| Requirement | Details                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Python      | Python 3.11+, including `pip` and virtual-environment (`venv`) support. Keep Python installed after installing Crux.                                     |
+| Shell       | Bash or Zsh on Linux/macOS; PowerShell on Windows. Fish and Command Prompt (`cmd.exe`) integration are currently unsupported.                            |
+| Terminal    | A terminal supporting ANSI colours. Background, cursor, and palette changes require OSC 4/10/11/12 support; support varies by emulator.                  |
 | Source code | Download or clone [the Crux repository](https://github.com/sheraz4196/crux). The install commands below run from the folder containing `pyproject.toml`. |
-| Internet | Needed to download Python, installation tools, and dependencies unless you already have local packages/wheels. Crux runs offline after installation. |
-| Git | Optional for installation from a downloaded ZIP; required for Git status and repository information in the prompt. |
-| Fonts | A Unicode-capable font for prompt symbols. A Nerd Font is optional, useful for file icons. |
+| Internet    | Needed to download Python, installation tools, and dependencies unless you already have local packages/wheels. Crux runs offline after installation.     |
+| Git         | Optional for installation from a downloaded ZIP; required for Git status and repository information in the prompt.                                       |
+| Fonts       | A Unicode-capable font for prompt symbols. A Nerd Font is optional, useful for file icons.                                                               |
 
-The installer downloads Crux's Python dependencies (`typer`, `rich`, and `pygments`) automatically. Node.js, npm, and a compiler are not required for a normal installation. Install the native `tree` utility if you want Bash/Zsh `tree` commands with arguments or redirected output.
+The installer downloads Crux's Python dependencies (`typer`, `rich`, and `pygments`) automatically. Node.js, npm, and a compiler are not required for a normal installation. Namespaced `crux tree` needs no native tree utility. Install native `tree` separately if you use it or opt-in wrapper fallback.
 
 ## Windows
 
@@ -54,10 +54,10 @@ Open a new PowerShell tab, then run:
 ```powershell
 crux doctor
 crux theme cobalt
-git status
+crux git status
 ```
 
-Run `git status` inside a Git repository. Use `crux view README.md` or `crux view path\to\code.py` for syntax-highlighted file viewing. PowerShell integration currently provides the prompt and `git status`; its `ls` and `tree` commands retain their normal behaviour. Use `git.exe status` when you need native Git output, especially in PowerShell pipelines.
+Run `crux git status` inside a Git repository. Use `crux view README.md` or `crux view path\to\code.py` for syntax-highlighted file viewing. PowerShell integration provides the prompt. Native `git`, `ls`, `tree`, `cat`, aliases and functions remain unchanged. Use namespaced Crux commands for formatted output; native wrappers are unavailable in PowerShell.
 
 ### If PowerShell blocks the profile
 
@@ -105,7 +105,7 @@ sh install.sh --shell bash
 sh install.sh --shell zsh
 ```
 
-Run only the command matching your shell. The script installs Crux under `${XDG_DATA_HOME:-$HOME/.local/share}/crux/venv`, creates `~/.local/bin/crux`, and connects your shell. Run it as your normal user, without `sudo`.
+Run only the command matching your shell. The script installs Crux under `${XDG_DATA_HOME:-$HOME/.local/share}/crux/venv`, creates `~/.local/bin/crux`, and connects your shell. Integration leaves PATH unchanged. Ensure your existing PATH includes `~/.local/bin`; if not, add it through your own shell configuration before relying on the command in a new terminal. Run it as your normal user, without `sudo`.
 
 Open a new terminal and run:
 
@@ -172,7 +172,7 @@ crux config
 crux theme
 ```
 
-Available themes are `default`, `dark`, `light`, `cobalt`, and `monochrome`. In Bash/Zsh, also try `ls`, `tree`, `cat README.md`, and `git status` inside a repository. Commands with arguments/options and redirected output normally use the native programs.
+Available themes are `default`, `dark`, `light`, `cobalt`, and `monochrome`. Try `crux ls`, `crux tree`, `crux view README.md`, and `crux git status` inside a repository. Native commands are unchanged by default on every shell.
 
 ### Theme and startup behaviour
 
@@ -192,7 +192,7 @@ For pipx installations, run from the updated source folder:
 pipx install --force .
 ```
 
-On Windows you can use `py -m pipx install --force .` instead. For `install.sh` installations on Linux/macOS, rerun the script with the same shell option. If the link path already contains a regular file, the script refuses to replace it; inspect the existing installation before changing it.
+On Windows you can use `py -m pipx install --force .` instead. For `install.sh` installations on Linux/macOS, rerun the script with the same shell option. The script reuses a valid existing environment. It refuses an unrelated executable/link or a symlinked/incomplete environment; inspect the existing installation before changing it.
 
 If behaviour still looks outdated, check which executable your shell is using:
 
@@ -227,4 +227,24 @@ crux uninstall --shell zsh --yes
 pipx uninstall crux-terminal
 ```
 
-For `install.sh` installations, after removing integration, remove the Crux link at `~/.local/bin/crux` and its isolated environment under `${XDG_DATA_HOME:-$HOME/.local/share}/crux/venv`. Open a new terminal afterward. Profile integration is removed by deleting only Crux's marked block; your other shell settings are preserved. Configuration files and GNOME Terminal's saved colours remain, and can be restored separately from the profile backup.
+For `install.sh` installations, after removing integration, remove the Crux link at `~/.local/bin/crux` and its isolated environment under `${XDG_DATA_HOME:-$HOME/.local/share}/crux/venv`. Open a new terminal afterward. Profile integration is removed by deleting only Crux's marked block; your other shell settings are preserved. Configuration files and GNOME Terminal's saved colors remain. Before uninstalling the package, use `crux theme --restore-profile` for guarded GNOME recovery, or `crux theme --reset-terminal` to disable prompt palette writes and request emulator defaults. Neither runs automatically on uninstall.
+
+## v0.2 compatibility and recovery
+
+Installation replaces the prompt and explains this before confirmation. Use `--keep-prompt` to retain an existing prompt framework, or `crux_restore_prompt` to restore the captured prompt in the current session. Reopen the shell after uninstall. No unrelated startup files or PATH entries are edited.
+
+Bash/Zsh native-command enhancement is disabled by default. To opt in explicitly:
+
+```sh
+crux install --shell bash --enhance-commands --yes
+```
+
+Existing aliases/functions owning `git`, `ls`, `tree`, or `cat` are skipped. Supported routes require terminal stdin and stdout; pipes, redirection, stdin, non-regular operands and unsupported options use native programs. To disable wrappers or upgrade a v0.1 profile, rerun install without `--enhance-commands` and reopen the shell. Use namespaced commands for reliable formatting. PowerShell native wrappers, Fish and cmd integration are unsupported.
+
+Config editing supports `crux config get SECTION.KEY`, `set SECTION.KEY VALUE`, and `reset [SECTION.KEY]`. Resetting all known settings confirms unless `--yes` is supplied; unrelated TOML is preserved. Edits refuse malformed, symlinked or unsafe layouts.
+
+GNOME recovery uses both the original `gnome-terminal-<id>.backup.ini` and last verified `.applied.json` color state. `crux theme --restore-profile` refuses to overwrite colors changed since Crux's last write, preserves unrelated preferences, and disables prompt palette writes. Original v0.1 backups alone cannot prove ownership: inspect their color values and selectively restore them in terminal preferences. Preserve backups; do not blindly load their whole profile over newer settings. A partial restore failure requires manual inspection.
+
+`crux theme --reset-terminal` requests OSC emulator defaults only on interactive output and saves `general.terminal_palette = false`. It does not recover arbitrary prior runtime colors. Selecting any theme reenables palettes. No restoration occurs automatically at process exit. See [README.md](README.md) for exact commands, JSON schemas and lifecycle limits.
+
+Use `crux doctor --shell SHELL --profile PATH` to inspect a specific integration without editing it. See [RELEASE.md](RELEASE.md) for build/clean-install checks and [V0.2_IMPLEMENTATION.md](V0.2_IMPLEMENTATION.md) for actual platform results.

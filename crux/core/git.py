@@ -17,6 +17,30 @@ def in_repository(path):
     return any((parent / ".git" / "HEAD").is_file() or (parent / ".git").is_file() for parent in (path, *path.parents))
 
 
+def current_branch(path):
+    """Read HEAD without a subprocess, including linked worktrees."""
+    path = Path(path).resolve()
+    for parent in (path, *path.parents):
+        directory = parent / ".git"
+        try:
+            if directory.is_file():
+                marker = directory.read_text(encoding="utf-8").strip()
+                if not marker.startswith("gitdir: "):
+                    return None
+                directory = parent / marker[8:]
+            head = (directory / "HEAD").read_text(encoding="utf-8").strip()
+        except FileNotFoundError:
+            continue
+        except (OSError, UnicodeError):
+            return None
+        if head.startswith("ref: refs/heads/"):
+            return head[len("ref: refs/heads/"):]
+        if len(head) in (40, 64) and all(c in "0123456789abcdef" for c in head):
+            return head[:7]
+        return None
+    return None
+
+
 def status(path=".", timeout=2):
     if not shutil.which("git"):
         raise ValueError("Git is not installed or not available in PATH.")
